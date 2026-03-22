@@ -1,0 +1,82 @@
+{
+    "web": {
+        "oauth": "",
+        "privateKey": "",
+        "certificate": ""
+    },
+    "jwt": {
+        "publicKey": "pubKey.pem",
+        "privateKey": "privKey.pem",
+        "lifetime": 2592000
+    },
+    "supabase": {
+        "url": "",
+        "key": "",
+        "tables": {
+            "monsters": "",
+            "users": "",
+            "items": "",
+            "auctions": "",
+            "jobs": "",
+            "templates": "",
+            "campRules": "",
+            "pointRules": "",
+            "events": "",
+            "signups": "",
+            "groups": "",
+            "deaths": "",
+            "claims": "",
+            "claimRates": "",
+            "tags": "",
+            "frozenUsers": "",
+            "unfrozenUsers": "",
+            "DKP": {
+                "lootHistory": "",
+                "ownedItems": ""
+            },
+            "PPP": {
+                "lootHistory": "",
+                "ownedItems": ""
+            },
+            "trackedRates": [],
+            "buckets": {
+                "images": "",
+                "screenshots": ""
+            }
+        }
+    },
+    "discord": {
+        "id": "",
+        "secret": ""
+    },
+    "auction": {
+        "DKP": {
+            "min": 0,
+            "increment": 0.1,
+            "raise": 0.1,
+            "winRaise": 0
+        },
+        "PPP": {
+            "min": 0,
+            "increment": 0.1,
+            "raise": 1,
+            "winRaise": 0.1
+        }
+    },
+    "roster": {
+        "alliances": 4,
+        "parties": 3,
+        "slots": 6,
+        "team": "",
+        "monsterGroups": [],
+        "placeholderMonsters": [],
+        "postDelay": 3600,
+        "disableEmptyBonus": false
+    },
+    "graph": {
+        "backgroundColor": "white",
+        "fontColor": "#bbbbbb",
+        "lineColor": "blue",
+        "lineFillColor": "rgba(0, 0, 255, 0.5)"
+    }
+}

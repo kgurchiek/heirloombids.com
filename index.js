@@ -1,20 +1,178 @@
 import fs from 'node:fs';
+import util from 'node:util';
 import http2 from 'node:http2';
+import crypto from 'node:crypto';
+import readline from 'node:readline';
+import cookie from 'cookie';
+import { createClient } from '@supabase/supabase-js';
 
-const favicon = fs.readFileSync('static/favicon.ico');
+const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
+const supabase = createClient(config.supabase.url, config.supabase.key);
+const favicon = await fs.promises.readFile('static/favicon.ico');
+const errorPages = {};
+await Promise.all((await fs.promises.readdir('error')).map(async a => errorPages[a.slice(0, a.lastIndexOf('.'))] = (await fs.promises.readFile(`error/${a}`)).toString()));
+
+let publicKey, privateKey;
+try {
+    publicKey = (await fs.promises.readFile(config.jwt.publicKey)).toString();
+    privateKey = (await fs.promises.readFile(config.jwt.privateKey)).toString();
+} catch (err) {}
+
+if (publicKey == null || privateKey == null) {
+    let rl = readline.promises.createInterface({ input: process.stdin, output: process.stdout });
+    let input;
+    while (!['', 'yes', 'y', 'no', 'n'].includes(input)) input = (await rl.question('Missing public or private key, would you like to generate a new pair? (Y/n)')).toLowerCase();
+    rl.close();
+    if (['no', 'n'].includes(input)) process.exit();
+    
+    ({ publicKey, privateKey } = await util.promisify(crypto.generateKeyPair)('ec', {
+        namedCurve: 'P-256',
+        privateKeyEncoding: { format: 'pem', type: 'pkcs8' },
+        publicKeyEncoding: { format: 'pem', type: 'spki' }
+    }));
+    await fs.promises.writeFile(config.jwt.publicKey, publicKey);
+    await fs.promises.writeFile(config.jwt.privateKey, privateKey);
+}
+
+const btoaUrl = (data) => btoa(data).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+const atobUrl = (data) => atob(data.replaceAll('-', '+').replaceAll('_', '/'));
+
+function createToken(payload) {
+    let header = btoaUrl(JSON.stringify({ alg: 'ES256', typ: 'JWT' }));
+    payload = btoaUrl(payload);
+    let key = `${header}.${payload}`;
+    let secret = crypto.sign('sha256', Buffer.from(key), privateKey).toString('base64').replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    key += `.${secret}`;
+    return key;
+}
+
+function parseToken(token) {
+    let [header, payload, secret] = token.split('.');
+    secret = crypto.verify('sha256', `${header}.${payload}`, publicKey, Buffer.from(secret, 'base64'));
+    payload = atobUrl(payload);
+    return { payload, secret };
+}
+
+async function getUser(id) {
+    let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
+    return error ? { error } : user[0];
+}
 
 let server = http2.createSecureServer({
-    key: fs.readFileSync('/etc/letsencrypt/live/heirloombids.com/privkey.pem'),
-    cert: fs.readFileSync('/etc/letsencrypt/live/heirloombids.com/cert.pem')
+    key: fs.readFileSync(config.web.privateKey),
+    cert: fs.readFileSync(config.web.certificate)
 });
+server.on('error', (err) => console.error(err));
 
-server.on('stream', (req, res) => {
-    console.log(req);
-    let url = new URL(`http://${req.headers.host}${req.url}`);
+server.on('request', async (req, res) => {
+    let url = new URL(`https://heirloombids.com${req.url}`);
 
-    if (url.pathname == '/favicon.ico') return res.end(favicon);
+    function redirect(location) {
+        res.statusCode = 303;
+        res.setHeader('Location', location);
+        res.end();
+    }
 
-    res.end('hello');
+    function authRedirect(state) {
+        state = state || url.href;
+        console.log(state)
+        let location = new URL(config.web.oauth);
+        location.searchParams.set('state', state);
+        redirect(location.href);
+    }
+
+    try {
+        let cookies = cookie.parseCookie(req.headers.cookie || '');
+
+        if (url.pathname == '/favicon.ico') return res.end(favicon);
+        
+        console.log(req.socket.remoteAddress, url.pathname);
+
+        if (url.pathname == '/auth') {
+            let state = url.searchParams.get('state') || 'https://heirloombids.com';
+            let valid = true;
+            try {
+                new URL(state)
+                valid = true;
+            } catch (err) {}
+            if (state == null || !valid) {
+                res.statusCode = 400;
+                res.end(errorPages[400]);
+                return;
+            }
+            let code = url.searchParams.get('code');
+            if (code == null) {
+                res.statusCode = 400;
+                res.end(errorPages[400]);
+                return;
+            }
+            let response = await fetch('https://discord.com/api/v10/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Basic ${btoa(`${config.discord.id}:${config.discord.secret}`)}`,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: 'https://heirloombids.com/auth'
+                }).toString()
+            });
+            if (response.status == 400) return authRedirect(state);
+            else if (response.status != 200) {
+                console.log('Error fetching token:', await response.json());
+                res.statusCode = 500;
+                res.end(`Discord API returned code ${response.status}`);
+                return;
+            }
+            let data = await response.json();
+            
+            let token = data.access_token;
+            response = await fetch('https://discord.com/api/v10/users/@me', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (response.status == 401) return authRedirect(state);
+            else if (response.status != 200) {
+                console.log('Error fetching user data:', await response.json());
+                res.statusCode = 500;
+                res.end(`Discord API returned code ${response.status}`);
+                return;
+            }
+            let user = await response.json();
+            
+            let dbUser = await getUser(user.id);
+            if (dbUser.error) {
+                console.log('Error fetching db user:', dbUser.error)
+                res.statusCode = 500;
+                res.end(errorPages[500]);
+                return;
+            }
+            res.appendHeader('set-cookie', `token=${createToken(JSON.stringify({ id: user.id, exp: Math.floor(Date.now() / 1000) + config.jwt.lifetime }))}`);
+            redirect(state);
+            return;
+        }
+        
+        let payload;
+        try {
+            let token = parseToken(cookies.token);
+            if (!token.secret) return authRedirect();
+            payload = JSON.parse(token.payload);
+            if (Math.floor(Date.now() / 1000) >= payload.exp) return authRedirect();
+        } catch (err) {
+            return authRedirect();
+        }
+        console.log(payload);
+
+        res.statusCode = 404;
+        res.end(errorPages[404])
+    } catch (err) {
+        console.error(err);
+        res.statusCode = 500;
+        res.end(errorPages[500]);
+        return;
+    }
 })
 
-server.listen(80);
+server.listen(443);

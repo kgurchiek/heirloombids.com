@@ -1,0 +1,4 @@
+config.json
+/node_modules
+pubKey.pem
+privKey.pem
