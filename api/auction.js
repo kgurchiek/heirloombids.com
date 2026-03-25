@@ -1,6 +1,6 @@
 export default {
     name: 'auction',
-    description: 'Gets information about an open auction',
+    description: 'Gets information about an auction',
     options: [
         {
             name: 'id',
@@ -13,7 +13,7 @@ export default {
         let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('id', id).limit(1);
         if (error) {
             res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error fetching auctions', details: error.message }));
+            res.end(JSON.stringify({ error: 'Error fetching auction', details: error.message }));
             return;
         }
         auction = auction[0];

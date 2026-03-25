@@ -221,7 +221,7 @@ server.on('request', async (req, res) => {
                         return;
                     }
 
-                    if (option.accepts != null && !option.accepts.includes(option.caseInsensitive ? value.toLowerCase() : value)) {
+                    if (option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
                         res.statusCode = 400;
                         res.end(JSON.stringify({ error: `"${value}" is not an accepted value for arg "${option.name}"` }));
                         return;

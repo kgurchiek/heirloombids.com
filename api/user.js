@@ -8,7 +8,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase, tagList }) {
+    async execute({ config, res, url, supabase }) {
         let id = url.searchParams.get('id');
         
         let { data: account, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
