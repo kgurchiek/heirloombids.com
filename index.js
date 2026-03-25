@@ -11,6 +11,8 @@ const supabase = createClient(config.supabase.url, config.supabase.key);
 const favicon = await fs.promises.readFile('static/favicon.ico');
 const errorPages = {};
 await Promise.all((await fs.promises.readdir('error')).map(async a => errorPages[a.slice(0, a.lastIndexOf('.'))] = (await fs.promises.readFile(`error/${a}`)).toString()));
+const commands = {};
+await Promise.all((await fs.promises.readdir('api')).map(async a => commands[a.slice(0, a.lastIndexOf('.'))] = (await import(`./api/${a}`)).default));
 
 let publicKey, privateKey;
 try {
@@ -142,13 +144,6 @@ server.on('request', async (req, res) => {
             }
             let user = await response.json();
             
-            let dbUser = await getUser(user.id);
-            if (dbUser.error) {
-                console.log('Error fetching db user:', dbUser.error)
-                res.statusCode = 500;
-                res.end(errorPages[500]);
-                return;
-            }
             res.appendHeader('set-cookie', `token=${createToken(JSON.stringify({ id: user.id, exp: Math.floor(Date.now() / 1000) + config.jwt.lifetime }))}`);
             redirect(state);
             return;
@@ -163,7 +158,78 @@ server.on('request', async (req, res) => {
         } catch (err) {
             return authRedirect();
         }
-        console.log(payload);
+
+        let user = await getUser(payload.id);
+        if (user.error) {
+            console.log('Error fetching db user:', user.error)
+            res.statusCode = 500;
+            res.end(errorPages[500]);
+            return;
+        }
+        if (user == null) return authRedirect();
+        user = user;
+        
+        let path = url.pathname.slice(1).split('/');
+        if (path[0] == 'api') {
+            let command = path[1];
+            let input = {
+                config,
+                req,
+                res,
+                url,
+                user,
+                supabase,
+                // auctions,
+                // auctionChannels,
+                // rollChannel,
+                // itemList,
+                // monsterList,
+                // userList,
+                // jobList,
+                // templateList,
+                // campRules,
+                // pointRules,
+                // groupList,
+                // tagList,
+                // lootHistory,
+                // eventList,
+                // signupList,
+                // monsters,
+                // archive,
+                // rosterChannels,
+                // ocrCategory,
+                // logChannel,
+                // memberScreenshotsChannel,
+                // rewardHistoryChannel,
+                // graphChannels,
+                // Monster,
+                // updateTagRates,
+                // updateGraphs,
+                // messageCallbacks,
+                // getUser,
+                // calculateCampPoints,
+                // calculateBonusPoints
+            }
+            if (commands[command]) {
+                res.setHeader('Content-Type', 'application/json')
+                command = commands[command];
+                for (let option of command.options) {
+                    let value = url.searchParams.get(option.name);
+                    if (option.required && value == null) {
+                        res.statusCode = 400;
+                        res.end(JSON.stringify({ error: `Missing required arg "${option.name}"` }));
+                        return;
+                    }
+
+                    if (option.accepts != null && !option.accepts.includes(option.caseInsensitive ? value.toLowerCase() : value)) {
+                        res.statusCode = 400;
+                        res.end(JSON.stringify({ error: `"${value}" is not an accepted value for arg "${option.name}"` }));
+                        return;
+                    }
+                }
+                return await command.execute(input);
+            }
+        }
 
         res.statusCode = 404;
         res.end(errorPages[404])
