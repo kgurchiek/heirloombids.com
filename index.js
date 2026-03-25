@@ -206,7 +206,7 @@ server.on('request', async (req, res) => {
                 // updateTagRates,
                 // updateGraphs,
                 // messageCallbacks,
-                // getUser,
+                getUser,
                 // calculateCampPoints,
                 // calculateBonusPoints
             }
