@@ -47,7 +47,10 @@
     },
     "discord": {
         "id": "",
-        "secret": ""
+        "secret": "",
+        "token": "",
+        "server": "",
+        "staffRoles": []
     },
     "auction": {
         "DKP": {

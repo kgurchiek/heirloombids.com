@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
 import { createClient } from '@supabase/supabase-js';
+import { Client, Partials, Collection, Events, GatewayIntentBits, EmbedBuilder } from 'discord.js';
 
 const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
 const supabase = createClient(config.supabase.url, config.supabase.key);
@@ -59,6 +60,16 @@ async function getUser(id) {
     let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
     return error ? { error } : user[0];
 }
+
+const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
+let guild;
+client.once(Events.ClientReady, async () => {
+    console.log(`[Bot]: ${client.user.tag}`);
+    console.log(`[Servers]: ${client.guilds.cache.size}`);
+    guild = await client.guilds.fetch(config.discord.server);
+    console.log('[Guild]:', guild.name)
+});
+client.login(config.discord.token);
 
 let server = http2.createSecureServer({
     key: fs.readFileSync(config.web.privateKey),
@@ -168,6 +179,11 @@ server.on('request', async (req, res) => {
         }
         if (user == null) return authRedirect();
         user = user;
+        let guildMember = await guild.members.fetch(interaction.user.id);
+        console.log(guildMember)
+        user.staff = false;
+        for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
+        console.log(user.staff)
         
         let path = url.pathname.slice(1).split('/');
         if (path[0] == 'api') {
@@ -178,6 +194,7 @@ server.on('request', async (req, res) => {
                 res,
                 url,
                 user,
+                client,
                 supabase,
                 // auctions,
                 // auctionChannels,

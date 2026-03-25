@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.99.3",
-    "cookie": "^1.1.1"
+    "cookie": "^1.1.1",
+    "discord.js": "^14.25.1"
   }
 }
