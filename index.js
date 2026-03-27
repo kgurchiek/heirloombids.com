@@ -61,6 +61,17 @@ async function getUser(id) {
     return error ? { error } : user[0];
 }
 
+let bidQueue = [];
+let blockedBids = [];
+const blockBid = (item, callback) => blockedBids.push({ item, callback });
+const unblockBid = (item) => blockedBids = blockedBids.filter(a => a.item != item);
+const handleBidQueue = async () => {
+    for (let bid of blockedBids) if (bidQueue.find(a => a.item == bid.item) == null) bid.callback();
+    if (bidQueue.length) await bidQueue.splice(0, 1)[0].func();
+    setTimeout(handleBidQueue);
+}
+handleBidQueue();
+
 const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
 let guild;
 client.once(Events.ClientReady, async () => {
@@ -178,12 +189,9 @@ server.on('request', async (req, res) => {
             return;
         }
         if (user == null) return authRedirect();
-        user = user;
-        let guildMember = await guild.members.fetch(interaction.user.id);
-        console.log(guildMember)
+        let guildMember = await guild.members.fetch(user.id);
         user.staff = false;
         for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
-        console.log(user.staff)
         
         let path = url.pathname.slice(1).split('/');
         if (path[0] == 'api') {
@@ -196,6 +204,8 @@ server.on('request', async (req, res) => {
                 user,
                 client,
                 supabase,
+                blockBid,
+                unblockBid,
                 // auctions,
                 // auctionChannels,
                 // rollChannel,
@@ -244,7 +254,14 @@ server.on('request', async (req, res) => {
                         return;
                     }
                 }
-                return await command.execute(input);
+                try {
+                    await command.execute(input);
+                } catch (err) {
+                    console.log(err);
+                    res.statusCode = 500;
+                    res.end(JSON.stringify({ error: 'Internal Error' }))
+                }
+                return
             }
         }
 
