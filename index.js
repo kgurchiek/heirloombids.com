@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
 import { createClient } from '@supabase/supabase-js';
-import { Client, Partials, Collection, Events, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { Client, Partials, Events, GatewayIntentBits } from 'discord.js';
 
 const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
 const supabase = createClient(config.supabase.url, config.supabase.key);
@@ -63,10 +63,10 @@ async function getUser(id) {
 
 let bidQueue = [];
 let blockedBids = [];
-const blockBid = (item, callback) => blockedBids.push({ item, callback });
-const unblockBid = (item) => blockedBids = blockedBids.filter(a => a.item != item);
+const blockBid = (id, callback) => blockedBids.push({ id, callback });
+const unblockBid = (id) => blockedBids = blockedBids.filter(a => a.id != id);
 const handleBidQueue = async () => {
-    for (let bid of blockedBids) if (bidQueue.find(a => a.item == bid.item) == null) bid.callback();
+    for (let bid of blockedBids) if (bidQueue.find(a => a.id == bid.id) == null) bid.callback();
     if (bidQueue.length) await bidQueue.splice(0, 1)[0].func();
     setTimeout(handleBidQueue);
 }
@@ -74,11 +74,14 @@ handleBidQueue();
 
 const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
 let guild;
+let rollChannel;
 client.once(Events.ClientReady, async () => {
     console.log(`[Bot]: ${client.user.tag}`);
     console.log(`[Servers]: ${client.guilds.cache.size}`);
     guild = await client.guilds.fetch(config.discord.server);
-    console.log('[Guild]:', guild.name)
+    console.log('[Guild]:', guild.name);
+    
+    rollChannel = await client.channels.fetch(config.discord.rollChannel);
 });
 client.login(config.discord.token);
 
@@ -208,7 +211,7 @@ server.on('request', async (req, res) => {
                 unblockBid,
                 // auctions,
                 // auctionChannels,
-                // rollChannel,
+                rollChannel,
                 // itemList,
                 // monsterList,
                 // userList,

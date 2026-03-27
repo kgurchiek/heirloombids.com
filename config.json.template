@@ -50,7 +50,8 @@
         "secret": "",
         "token": "",
         "server": "",
-        "staffRoles": []
+        "staffRoles": [],
+        "rollChannel": ""
     },
     "auction": {
         "DKP": {

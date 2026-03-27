@@ -43,13 +43,14 @@ export default {
             return;
         }
         
-        unblockBid(item.name);
         ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).insert({ item: item.name, host: user.username }).select('*'));
         if (error) {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: 'Error Creating Auction', details: error.message }));
             return;
         }
-        res.end(JSON.stringify(auction[0]));
+        auction = auction[0];
+        unblockBid(auction.id);
+        res.end(JSON.stringify(auction));
     }
 }
