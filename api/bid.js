@@ -18,11 +18,8 @@ export default {
         let amount = url.searchParams.get('amount');
         
         if (user.frozen) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('Account Frozen')
-                .setDescription('Your account is frozen. You cannot manage auctions or place bids on items this time.');
-            await interaction.editReply({ embeds: [errorEmbed] });
+            res.statusCode = 403;
+            res.end(JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
             return;
         }
         

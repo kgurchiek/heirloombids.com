@@ -1,5 +1,4 @@
 import util from 'node:util';
-import { EmbedBuilder } from 'discord.js';
 
 export default {
     name: 'closeauction',
@@ -11,7 +10,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase, user, blockBid, rollChannel }) {
+    async execute({ config, res, url, supabase, user, blockBid }) {
         let id = url.searchParams.get('id');
 
         let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*, item (name, type, monster)').eq('id', id).limit(1);
@@ -44,10 +43,6 @@ export default {
         let winners = auction.bids.filter(a => a.amount == auction.bids[auction.bids.length - 1].amount);
         let winner;
         if (winners.length > 1) {
-            let rollEmbed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle(`Rolls for ${auction.item.name}${winners.filter(a => a.wipe).length == 1 ? ` (Forcing winner to ${winners.find(a => a.wipe).user})` : ''}`);
-            let message = await rollChannel.send({ embeds: [rollEmbed] });
             do {
                 winners.forEach(a => delete a.roll);
                 for (let item of winners) {
@@ -58,12 +53,6 @@ export default {
                 }
                 winner = winners.reduce((a, b) => (a == null || b.roll > a.roll) ? b : a, null);
             } while (!(winners.find(a => a.wipe) == null || winner.wipe));
-            for (let item of winners) {
-                rollEmbed.data.description = `${rollEmbed.data.description || ''}\n${item.user}: ${item.roll}`.trim();
-                await message.edit({ embeds: [rollEmbed] });
-            }
-            rollEmbed.data.description += `\n\n**Winner:** ${winner.user}`;
-            await message.edit({ embeds: [rollEmbed] });
         } else winner = winners.sort((a, b) => b.amount - a.amount)[0];
 
         ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).update({
