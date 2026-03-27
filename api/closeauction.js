@@ -2,8 +2,8 @@ import util from 'node:util';
 import { EmbedBuilder } from 'discord.js';
 
 export default {
-    name: 'closeitem',
-    description: 'closes an auction on an item',
+    name: 'closeauction',
+    description: 'closes an auction',
     options: [
         {
             name: 'id',
@@ -72,7 +72,7 @@ export default {
             winner: winner?.user,
             price: winner?.amount,
             closer: user.username
-        }).eq('id', auction.id).select('*'));
+        }).eq('id', auction.id).select('*, item (name, type, monster)'));
         if (error) {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: 'Error Closing Auction', details: error.message }));
@@ -97,7 +97,7 @@ export default {
         if (auction.bids.length > 0) {
             ({error} = await supabase.rpc('increment_points', {
                 table_name: config.supabase.tables.users,
-                username: winner.user,
+                id: winner.userId,
                 type: auction.item.type.toLowerCase(),
                 amount: -winner.amount
             }))

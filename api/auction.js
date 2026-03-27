@@ -25,4 +25,4 @@ export default {
 
         res.end(JSON.stringify(auction));
     }
-};
+}

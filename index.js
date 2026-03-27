@@ -13,7 +13,10 @@ const favicon = await fs.promises.readFile('static/favicon.ico');
 const errorPages = {};
 await Promise.all((await fs.promises.readdir('error')).map(async a => errorPages[a.slice(0, a.lastIndexOf('.'))] = (await fs.promises.readFile(`error/${a}`)).toString()));
 const commands = {};
-await Promise.all((await fs.promises.readdir('api')).map(async a => commands[a.slice(0, a.lastIndexOf('.'))] = (await import(`./api/${a}`)).default));
+await Promise.all((await fs.promises.readdir('api')).map(async a => {
+    let command = (await import(`./api/${a}`)).default;
+    commands[command.name] = command;
+}));
 
 let publicKey, privateKey;
 try {
@@ -24,7 +27,7 @@ try {
 if (publicKey == null || privateKey == null) {
     let rl = readline.promises.createInterface({ input: process.stdin, output: process.stdout });
     let input;
-    while (!['', 'yes', 'y', 'no', 'n'].includes(input)) input = (await rl.question('Missing public or private key, would you like to generate a new pair? (Y/n)')).toLowerCase();
+    while (!['', 'yes', 'y', 'no', 'n'].includes(input)) input = (await rl.question('Missing public or private key, would you like to generate a new pair? (Y/n) ')).toLowerCase();
     rl.close();
     if (['no', 'n'].includes(input)) process.exit();
     
@@ -74,14 +77,11 @@ handleBidQueue();
 
 const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
 let guild;
-let rollChannel;
 client.once(Events.ClientReady, async () => {
     console.log(`[Bot]: ${client.user.tag}`);
     console.log(`[Servers]: ${client.guilds.cache.size}`);
     guild = await client.guilds.fetch(config.discord.server);
     console.log('[Guild]:', guild.name);
-    
-    rollChannel = await client.channels.fetch(config.discord.rollChannel);
 });
 client.login(config.discord.token);
 
@@ -209,9 +209,11 @@ server.on('request', async (req, res) => {
                 supabase,
                 blockBid,
                 unblockBid,
+                blockedBids,
+                bidQueue,
                 // auctions,
                 // auctionChannels,
-                rollChannel,
+                // rollChannel,
                 // itemList,
                 // monsterList,
                 // userList,
@@ -243,7 +245,7 @@ server.on('request', async (req, res) => {
             if (commands[command]) {
                 res.setHeader('Content-Type', 'application/json')
                 command = commands[command];
-                for (let option of command.options) {
+                for (let option of command.options || []) {
                     let value = url.searchParams.get(option.name);
                     if (option.required && value == null) {
                         res.statusCode = 400;

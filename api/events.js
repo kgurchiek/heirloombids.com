@@ -23,4 +23,4 @@ export default {
 
         res.end(JSON.stringify(events));
     }
-};
+}
