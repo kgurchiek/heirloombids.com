@@ -104,10 +104,11 @@ server.on('request', async (req, res) => {
         end(303);
     }
 
-    function authRedirect(state) {
+    function authRedirect(state, location) {
         state = state || url.href;
+        location = location || config.web.oauth;
         console.log(state)
-        let location = new URL(config.web.oauth);
+        let location = new URL(location);
         location.searchParams.set('state', state);
         redirect(location.href);
     }
@@ -184,7 +185,7 @@ server.on('request', async (req, res) => {
             end(500, errorPages[500]);
             return;
         }
-        if (user == null) return authRedirect();
+        if (user == null) return authRedirect(null, 'https://heirloombids.com/register');
         let guildMember = await guild.members.fetch(user.id);
         user.staff = false;
         for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
