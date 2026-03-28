@@ -11,17 +11,9 @@ export default {
     async execute({ config, res, url, supabase }) {
         let id = url.searchParams.get('id');
         let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id).limit(1);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error fetching event', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error fetching event', details: error.message }));
         event = event[0];
-        if (event == null) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: `No auctions found with id "${id}"` }));
-            return;
-        }
+        if (event == null) return end(400, JSON.stringify({ error: `No auctions found with id "${id}"` }));
 
         res.end(JSON.stringify(event));
     }

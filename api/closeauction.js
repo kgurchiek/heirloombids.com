@@ -10,35 +10,19 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase, user, blockBid }) {
+    async execute({ config, res, end, url, supabase, user, blockBid }) {
         let id = url.searchParams.get('id');
 
         let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*, item (name, type, monster)').eq('id', id).limit(1);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error Fetching Auction', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error Fetching Auction', details: error.message }));
         auction = auction[0];
-        if (auction == null) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: `Couldn't find auction with id "${id}"` }));
-            return;
-        }
+        if (auction == null) return end(400, JSON.stringify({ error: `Couldn't find auction with id "${id}"` }));
         
-        if (!auction.open) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: 'Auction Already Closed' }));
-            return;
-        }
+        if (!auction.open) return end(400, JSON.stringify({ error: 'Auction Already Closed' }));
 
         await util.promisify(blockBid)(auction.id);
 
-        if (user.frozen) {
-            res.statusCode = 403;
-            res.end(JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
-            return;
-        }
+        if (user.frozen) return end(403, JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
 
         let winners = auction.bids.filter(a => a.amount == auction.bids[auction.bids.length - 1].amount);
         let winner;
@@ -62,11 +46,7 @@ export default {
             price: winner?.amount,
             closer: user.username
         }).eq('id', auction.id).select('*, item (name, type, monster)'));
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error Closing Auction', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error Closing Auction', details: error.message }));
         auction = auction[0];
         
         if (winner) {
@@ -76,25 +56,17 @@ export default {
                 points_spent: winner.amount,
                 auction: auction.id
             }));
-            if (error) {
-                res.statusCode = 500;
-                res.end(JSON.stringify({ error: 'Error Updating Loot History', details: error.message }));
-                return;
-            }
+            if (error) return end(500, JSON.stringify({ error: 'Error Updating Loot History', details: error.message }));
         }
 
         if (auction.bids.length > 0) {
-            ({error} = await supabase.rpc('increment_points', {
+            ({ error } = await supabase.rpc('increment_points', {
                 table_name: config.supabase.tables.users,
                 id: winner.userId,
                 type: auction.item.type.toLowerCase(),
                 amount: -winner.amount
             }))
-            if (error) {
-                res.statusCode = 500;
-                res.end(JSON.stringify({ error: 'Error Removing Points', details: error.message }));
-                return;
-            }
+            if (error) return end(500, JSON.stringify({ error: 'Error Removing Points', details: error.message }));
         }
 
         res.end(JSON.stringify(auction));

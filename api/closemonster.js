@@ -10,21 +10,13 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase, user, blockBid }) {
+    async execute({ config, res, end, url, supabase, user, blockBid }) {
         let monster = url.searchParams.get('monster');
 
         let { data: auctions, error } = await supabase.from(config.supabase.tables.auctions).select('*, item!inner(name, type, monster)').eq('item.monster', monster).eq('open', true);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error Fetching Auction', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error Fetching Auction', details: error.message }));
 
-        if (user.frozen) {
-            res.statusCode = 403;
-            res.end(JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
-            return;
-        }
+        if (user.frozen) return end(403, JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
         
         let errors = [];
         let closes = [];
@@ -73,7 +65,7 @@ export default {
             }
     
             if (auction.bids.length > 0) {
-                ({error} = await supabase.rpc('increment_points', {
+                ({ error } = await supabase.rpc('increment_points', {
                     table_name: config.supabase.tables.users,
                     id: winner.userId,
                     type: auction.item.type.toLowerCase(),

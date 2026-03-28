@@ -8,20 +8,12 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase }) {
+    async execute({ config, res, end, url, supabase }) {
         let id = url.searchParams.get('id');
         let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('id', id).limit(1);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error fetching auction', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error fetching auction', details: error.message }));
         auction = auction[0];
-        if (auction == null) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: `No auctions found with id "${id}"` }));
-            return;
-        }
+        if (auction == null) return end(400, JSON.stringify({ error: `No auctions found with id "${id}"` }));
 
         res.end(JSON.stringify(auction));
     }

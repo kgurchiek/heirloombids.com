@@ -94,10 +94,14 @@ server.on('error', (err) => console.error(err));
 server.on('request', async (req, res) => {
     let url = new URL(`https://heirloombids.com${req.url}`);
 
+    function end(code, body) {
+        if (code != null) res.statusCode = code;
+        res.end(body);
+    }
+
     function redirect(location) {
-        res.statusCode = 303;
         res.setHeader('Location', location);
-        res.end();
+        end(303);
     }
 
     function authRedirect(state) {
@@ -122,17 +126,9 @@ server.on('request', async (req, res) => {
                 new URL(state)
                 valid = true;
             } catch (err) {}
-            if (state == null || !valid) {
-                res.statusCode = 400;
-                res.end(errorPages[400]);
-                return;
-            }
+            if (state == null || !valid) return end(400, errorPages[400]);
             let code = url.searchParams.get('code');
-            if (code == null) {
-                res.statusCode = 400;
-                res.end(errorPages[400]);
-                return;
-            }
+            if (code == null) return end(400, errorPages[400]);
             let response = await fetch('https://discord.com/api/v10/oauth2/token', {
                 method: 'POST',
                 headers: {
@@ -148,8 +144,7 @@ server.on('request', async (req, res) => {
             if (response.status == 400) return authRedirect(state);
             else if (response.status != 200) {
                 console.log('Error fetching token:', await response.json());
-                res.statusCode = 500;
-                res.end(`Discord API returned code ${response.status}`);
+                end(500, `Discord API returned code ${response.status}`);
                 return;
             }
             let data = await response.json();
@@ -163,8 +158,7 @@ server.on('request', async (req, res) => {
             if (response.status == 401) return authRedirect(state);
             else if (response.status != 200) {
                 console.log('Error fetching user data:', await response.json());
-                res.statusCode = 500;
-                res.end(`Discord API returned code ${response.status}`);
+                end(500, `Discord API returned code ${response.status}`);
                 return;
             }
             let user = await response.json();
@@ -187,8 +181,7 @@ server.on('request', async (req, res) => {
         let user = await getUser(payload.id);
         if (user.error) {
             console.log('Error fetching db user:', user.error)
-            res.statusCode = 500;
-            res.end(errorPages[500]);
+            end(500, errorPages[500]);
             return;
         }
         if (user == null) return authRedirect();
@@ -203,6 +196,7 @@ server.on('request', async (req, res) => {
                 config,
                 req,
                 res,
+                end,
                 url,
                 user,
                 client,
@@ -243,15 +237,11 @@ server.on('request', async (req, res) => {
                 // calculateBonusPoints
             }
             if (commands[command]) {
-                res.setHeader('Content-Type', 'application/json')
+                res.setHeader('Content-Type', 'application/json');
                 command = commands[command];
                 for (let option of command.options || []) {
                     let value = url.searchParams.get(option.name);
-                    if (option.required && value == null) {
-                        res.statusCode = 400;
-                        res.end(JSON.stringify({ error: `Missing required arg "${option.name}"` }));
-                        return;
-                    }
+                    if (option.required && value == null) return end(400, JSON.stringify({ error: `Missing required arg "${option.name}"` }));
 
                     if (option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
                         res.statusCode = 400;
@@ -263,19 +253,16 @@ server.on('request', async (req, res) => {
                     await command.execute(input);
                 } catch (err) {
                     console.log(err);
-                    res.statusCode = 500;
-                    res.end(JSON.stringify({ error: 'Internal Error' }))
+                    end(500, JSON.stringify({ error: 'Internal Error' }));
                 }
-                return
+                return;
             }
         }
 
-        res.statusCode = 404;
-        res.end(errorPages[404])
+        end(404, errorPages[404])
     } catch (err) {
         console.error(err);
-        res.statusCode = 500;
-        res.end(errorPages[500]);
+        end(500, errorPages[500]);
         return;
     }
 })

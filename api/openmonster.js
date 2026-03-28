@@ -8,26 +8,14 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, url, supabase, user, unblockBid }) {
+    async execute({ config, res, end, url, supabase, user, unblockBid }) {
         let monster = url.searchParams.get('monster');
         let { data: items, error } = await supabase.from(config.supabase.tables.items).select('*').eq('monster', monster);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error Fetching Items', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error Fetching Items', details: error.message }));
 
-        if (items.length == 0) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: `Couldn\'t find items for monster "${monster}".` }))
-            return;
-        }
+        if (items.length == 0) return end(400, JSON.stringify({ error: `Couldn\'t find items for monster "${monster}".` }))
 
-        if (user.frozen) {
-            res.statusCode = 403;
-            res.end(JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
-            return;
-        }
+        if (user.frozen) return end(403, JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
     
         let errors = [];
         let auctions = [];
@@ -35,7 +23,7 @@ export default {
             let auction;
             ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('item', item.name).eq('open', true).limit(1));
             if (error) {
-                res.end(JSON.stringify({ error: 'Error Checking Auctions', details: error.message }));
+                errors.push({ error: 'Error Checking Auctions', details: error.message });
                 continue;
             }
             if (auction.length != 0) continue;

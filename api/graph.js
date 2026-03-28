@@ -24,7 +24,7 @@ export default {
             description: 'the color of the area beneath the line'
         }
     ],
-    async execute({ config, res, url, supabase }) {
+    async execute({ config, res, end, url, supabase }) {
         let monsterName = url.searchParams.get('monster');
         let backgroundColor =  url.searchParams.get('backgroundcolor');
         let fontColor =  url.searchParams.get('fontcolor');
@@ -32,25 +32,13 @@ export default {
         let lineFillColor =  url.searchParams.get('fillcolor');
         
         let { data, error } = await supabase.from(config.supabase.tables.monsters).select('*').eq('monster_name', monsterName).limit(1);
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error fetching monster', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error fetching monster', details: error.message }));
         let monster = data[0];
-        if (monster == null) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: `Unknown monster "${monsterName}"` }));
-            return;
-        }
+        if (monster == null) return end(400, JSON.stringify({ error: `Unknown monster "${monsterName}"` }));
         let group = config.roster.monsterGroups.find(b => b.includes(data.monster_name)) || [data.monster_name];
 
         ({ data, error } = await supabase.from(config.supabase.tables.signups).select('*, event_id (event_id, monster_name)'));
-        if (error) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: 'Error fetching signups', details: error.message }));
-            return;
-        }
+        if (error) return end(500, JSON.stringify({ error: 'Error fetching signups', details: error.message }));
         let signups = data.filter(a => group.includes(a.event_id.monster_name));
         
         let graph = {
@@ -114,8 +102,7 @@ export default {
             graph.data.datasets[0].data[day]++;
         });
         let location = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(graph))}&backgroundColor=${encodeURIComponent(backgroundColor || config.graph.backgroundColor)}`;
-        res.statusCode = 303;
         res.setHeader('Location', location);
-        res.end();
+        end(303);
     }
 }
