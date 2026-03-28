@@ -18,6 +18,21 @@ await Promise.all((await fs.promises.readdir('api')).map(async a => {
     commands[command.name] = command;
 }));
 
+const staticFiles = {};
+async function readFile(path) {
+    let stat = await fs.promises.stat(path.join('/'));
+    if (stat.isDirectory()) await Promise.all((await fs.promises.readdir(path.join('/'))).map(async a => await readFile(path.concat(a))));
+    else {
+        let object = staticFiles;
+        for (let directory of path.slice(0, -1)) {
+            if (object[directory] == null) object[directory] = {};
+            object = object[directory];
+        }
+        object[path[path.length - 1]] = await fs.promises.readFile(path.join('/'));
+    }
+}
+await readFile(['static']);
+
 let publicKey, privateKey;
 try {
     publicKey = (await fs.promises.readFile(config.jwt.publicKey)).toString();
@@ -108,9 +123,9 @@ server.on('request', async (req, res) => {
         state = state || url.href;
         location = location || config.web.oauth;
         console.log(state)
-        let location = new URL(location);
-        location.searchParams.set('state', state);
-        redirect(location.href);
+        let redirectUrl = new URL(location);
+        redirectUrl.searchParams.set('state', state);
+        redirect(redirectUrl.href);
     }
 
     try {
@@ -168,6 +183,10 @@ server.on('request', async (req, res) => {
             redirect(state);
             return;
         }
+
+        if (url.pathname == '/register') {
+            return res.end(staticFiles['register.html']);
+        }
         
         let payload;
         try {
@@ -180,12 +199,12 @@ server.on('request', async (req, res) => {
         }
 
         let user = await getUser(payload.id);
+        if (user == null) return authRedirect(null, 'https://heirloombids.com/register');
         if (user.error) {
             console.log('Error fetching db user:', user.error)
             end(500, errorPages[500]);
             return;
         }
-        if (user == null) return authRedirect(null, 'https://heirloombids.com/register');
         let guildMember = await guild.members.fetch(user.id);
         user.staff = false;
         for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
