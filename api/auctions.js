@@ -7,7 +7,7 @@ export default {
         {
             name: 'open',
             description: 'whether or not the auction is open',
-            accepts: ['true', 'false', null],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         }
     ],

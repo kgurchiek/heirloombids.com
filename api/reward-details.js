@@ -52,7 +52,6 @@ export default {
             points[bonusRule.dkp_value ? 'DKP' : 'PPP'] += calculateBonusPoints(pointRules, signup, type);
             signup.points = points;
         }
-        console.log(signups)
         res.end(JSON.stringify(signups));
     }
 }

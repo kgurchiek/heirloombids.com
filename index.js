@@ -220,7 +220,7 @@ server.on('request', async (req, res) => {
                     let value = url.searchParams.get(option.name);
                     if (option.required && value == null) return end(400, JSON.stringify({ error: `Missing required arg "${option.name}"` }));
 
-                    if (option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
+                    if (value != null && option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
                         res.statusCode = 400;
                         res.end(JSON.stringify({ error: `"${value}" is not an accepted value for arg "${option.name}"` }));
                         return;
