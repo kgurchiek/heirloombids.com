@@ -4,19 +4,29 @@ import http2 from 'node:http2';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
-import { createClient } from '@supabase/supabase-js';
-import { Client, Partials, Events, GatewayIntentBits } from 'discord.js';
+import { config, client, getUser } from './lib.js';
+import { Events } from 'discord.js';
 
-const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
-const supabase = createClient(config.supabase.url, config.supabase.key);
+let authUrl = new URL(`https://${config.web.hostname}`);
+authUrl.pathname = '/auth';
+let oauthUrl = new URL(config.web.oauth);
+oauthUrl.searchParams.set('redirect_uri', authUrl.href);
+let registerUrl = new URL(`https://${config.web.hostname}`);
+registerUrl.pathname = '/register';
 const favicon = await fs.promises.readFile('static/favicon.ico');
 const errorPages = {};
 await Promise.all((await fs.promises.readdir('error')).map(async a => errorPages[a.slice(0, a.lastIndexOf('.'))] = (await fs.promises.readFile(`error/${a}`)).toString()));
-const commands = {};
-await Promise.all((await fs.promises.readdir('api')).map(async a => {
-    let command = (await import(`./api/${a}`)).default;
-    commands[command.name] = command;
-}));
+let count = Object.keys(errorPages).length;
+console.log(`[Pages]: Loaded ${count} error page${count == 1 ? '' : 's'}`)
+const api = {};
+count = 0;
+let promises = ((await fs.promises.readdir('api')).map(a => (async () => {
+    let endpoint = (await import(`./api/${a}`)).default;
+    api[endpoint.name] = endpoint;
+    count++;
+})));
+for (let promise of promises) await promise();
+console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`)
 
 const staticFiles = {};
 async function readFile(path) {
@@ -74,23 +84,6 @@ function parseToken(token) {
     return { payload, secret };
 }
 
-async function getUser(id) {
-    let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
-    return error ? { error } : user[0];
-}
-
-let bidQueue = [];
-let blockedBids = [];
-const blockBid = (id, callback) => blockedBids.push({ id, callback });
-const unblockBid = (id) => blockedBids = blockedBids.filter(a => a.id != id);
-const handleBidQueue = async () => {
-    for (let bid of blockedBids) if (bidQueue.find(a => a.id == bid.id) == null) bid.callback();
-    if (bidQueue.length) await bidQueue.splice(0, 1)[0].func();
-    setTimeout(handleBidQueue);
-}
-handleBidQueue();
-
-const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
 let guild;
 client.once(Events.ClientReady, async () => {
     console.log(`[Bot]: ${client.user.tag}`);
@@ -107,7 +100,8 @@ let server = http2.createSecureServer({
 server.on('error', (err) => console.error(err));
 
 server.on('request', async (req, res) => {
-    let url = new URL(`https://heirloombids.com${req.url}`);
+    let url = new URL(`https://localhost${req.url}`);
+    url.hostname = config.web.hostname;
 
     function end(code, body) {
         if (code != null) res.statusCode = code;
@@ -121,8 +115,7 @@ server.on('request', async (req, res) => {
 
     function authRedirect(state, location) {
         state = state || url.href;
-        location = location || config.web.oauth;
-        console.log(state)
+        location = location || oauthUrl.href;
         let redirectUrl = new URL(location);
         redirectUrl.searchParams.set('state', state);
         redirect(redirectUrl.href);
@@ -133,10 +126,10 @@ server.on('request', async (req, res) => {
 
         if (url.pathname == '/favicon.ico') return res.end(favicon);
         
-        console.log(req.socket.remoteAddress, url.pathname);
+        console.log(req.socket.remoteAddress, `${url.pathname}${url.search}`);
 
         if (url.pathname == '/auth') {
-            let state = url.searchParams.get('state') || 'https://heirloombids.com';
+            let state = url.searchParams.get('state') || `https://${config.web.hostname}`;
             let valid = true;
             try {
                 new URL(state)
@@ -154,7 +147,7 @@ server.on('request', async (req, res) => {
                 body: new URLSearchParams({
                     grant_type: 'authorization_code',
                     code,
-                    redirect_uri: 'https://heirloombids.com/auth'
+                    redirect_uri: authUrl
                 }).toString()
             });
             if (response.status == 400) return authRedirect(state);
@@ -199,7 +192,8 @@ server.on('request', async (req, res) => {
         }
 
         let user = await getUser(payload.id);
-        if (user == null) return authRedirect(null, 'https://heirloombids.com/register');
+        if (config.discord.registerBypass.includes(payload.id)) user = payload;
+        if (user == null) return authRedirect(null, registerUrl.href);
         if (user.error) {
             console.log('Error fetching db user:', user.error)
             end(500, errorPages[500]);
@@ -211,55 +205,18 @@ server.on('request', async (req, res) => {
         
         let path = url.pathname.slice(1).split('/');
         if (path[0] == 'api') {
-            let command = path[1];
+            let endpoint = path[1];
             let input = {
-                config,
                 req,
                 res,
                 end,
                 url,
-                user,
-                client,
-                supabase,
-                blockBid,
-                unblockBid,
-                blockedBids,
-                bidQueue,
-                // auctions,
-                // auctionChannels,
-                // rollChannel,
-                // itemList,
-                // monsterList,
-                // userList,
-                // jobList,
-                // templateList,
-                // campRules,
-                // pointRules,
-                // groupList,
-                // tagList,
-                // lootHistory,
-                // eventList,
-                // signupList,
-                // monsters,
-                // archive,
-                // rosterChannels,
-                // ocrCategory,
-                // logChannel,
-                // memberScreenshotsChannel,
-                // rewardHistoryChannel,
-                // graphChannels,
-                // Monster,
-                // updateTagRates,
-                // updateGraphs,
-                // messageCallbacks,
-                getUser,
-                // calculateCampPoints,
-                // calculateBonusPoints
+                user
             }
-            if (commands[command]) {
+            if (api[endpoint]) {
                 res.setHeader('Content-Type', 'application/json');
-                command = commands[command];
-                for (let option of command.options || []) {
+                let apiModule = api[endpoint];
+                for (let option of apiModule.options || []) {
                     let value = url.searchParams.get(option.name);
                     if (option.required && value == null) return end(400, JSON.stringify({ error: `Missing required arg "${option.name}"` }));
 
@@ -270,7 +227,7 @@ server.on('request', async (req, res) => {
                     }
                 }
                 try {
-                    await command.execute(input);
+                    await apiModule.execute(input);
                 } catch (err) {
                     console.log(err);
                     end(500, JSON.stringify({ error: 'Internal Error' }));
@@ -285,6 +242,6 @@ server.on('request', async (req, res) => {
         end(500, errorPages[500]);
         return;
     }
-})
+});
 
 server.listen(443);

@@ -1,3 +1,5 @@
+import { config, supabase } from '../lib.js';
+
 export default {
     name: 'graph',
     description: 'Fetches a raid verification graph',
@@ -24,7 +26,7 @@ export default {
             description: 'the color of the area beneath the line'
         }
     ],
-    async execute({ config, res, end, url, supabase }) {
+    async execute({ res, end, url }) {
         let monsterName = url.searchParams.get('monster');
         let backgroundColor =  url.searchParams.get('backgroundcolor');
         let fontColor =  url.searchParams.get('fontcolor');

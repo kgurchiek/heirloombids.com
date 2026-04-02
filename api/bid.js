@@ -1,3 +1,5 @@
+import { config, supabase, blockedBids, bidQueue } from '../lib.js';
+
 export default {
     name: 'bid',
     description: 'places a bid on an item',
@@ -13,7 +15,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, end, url, user, supabase, blockedBids, bidQueue }) {
+    async execute({ res, end, url, user }) {
         let id = url.searchParams.get('id');
         let amount = url.searchParams.get('amount');
         

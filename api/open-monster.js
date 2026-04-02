@@ -1,5 +1,7 @@
+import { config, supabase, openAuction } from '../lib.js';
+
 export default {
-    name: 'openmonster',
+    name: 'open-monster',
     description: 'opens auctions on all of a monster\'s items',
     options: [
         {
@@ -8,7 +10,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, end, url, supabase, user, unblockBid }) {
+    async execute({ res, end, url, user }) {
         let monster = url.searchParams.get('monster');
         let { data: items, error } = await supabase.from(config.supabase.tables.items).select('*').eq('monster', monster);
         if (error) return end(500, JSON.stringify({ error: 'Error Fetching Items', details: error.message }));
@@ -20,22 +22,10 @@ export default {
         let errors = [];
         let auctions = [];
         for (let item of items) {
-            let auction;
-            ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('item', item.name).eq('open', true).limit(1));
-            if (error) {
-                errors.push({ error: 'Error Checking Auctions', details: error.message });
-                continue;
-            }
-            if (auction.length != 0) continue;
-            
-            ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).insert({ item: item.name, host: user.username }).select('*'));
-            if (error) {
-                errors.push({ error: 'Error Creating Auction', details: error.message });
-                continue;
-            }
-            auction = auction[0];
-            unblockBid(auction.id);
-            auctions.push(auction);
+            auction = await openAuction(item.name, user.username);
+            if (auction == null) continue;
+            if (auction.error) errors.push(auction);
+            else auctions.push(auction);
         }
         res.end(JSON.stringify({ errors, auctions }));
     }

@@ -1,3 +1,5 @@
+import { config, supabase } from '../lib.js';
+
 export default {
     name: 'register',
     description: 'Creates an account',
@@ -8,7 +10,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, end, url, user, supabase }) {
+    async execute({ res, end, url, user }) {
         let username = url.searchParams.get('username');
         if ((await supabase.from(config.supabase.tables.users).select('*').eq('id', user.id).limit(1)).data[0] != null) return end(400, JSON.stringify({ error: 'Account already exists' }));
         if ((await supabase.from(config.supabase.tables.users).select('*').eq('username', username).limit(1)).data[0] != null) return end(400, JSON.stringify({ error: 'Username taken' }));

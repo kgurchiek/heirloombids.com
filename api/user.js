@@ -1,3 +1,5 @@
+import { config, supabase } from '../lib.js';
+
 export default {
     name: 'checkuser',
     description: 'Gets information about a user',
@@ -8,7 +10,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, end, url, supabase }) {
+    async execute({ res, end, url }) {
         let id = url.searchParams.get('id');
         
         let { data: account, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);

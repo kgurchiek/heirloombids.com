@@ -1,3 +1,5 @@
+import { config, supabase } from '../lib.js';
+
 export default {
     name: 'auctions',
     description: 'Gets a list of auctions',
@@ -9,7 +11,7 @@ export default {
             caseInsensitive: true
         }
     ],
-    async execute({ config, res, end, url, supabase }) {
+    async execute({ res, end, url }) {
         let open = url.searchParams.get('open');
         let auctions;
         let error;

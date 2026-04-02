@@ -1,3 +1,5 @@
+import { config, supabase } from '../lib.js';
+
 export default {
     name: 'auction',
     description: 'Gets information about an auction',
@@ -8,7 +10,7 @@ export default {
             required: true
         }
     ],
-    async execute({ config, res, end, url, supabase }) {
+    async execute({ res, end, url }) {
         let id = url.searchParams.get('id');
         let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('id', id).limit(1);
         if (error) return end(500, JSON.stringify({ error: 'Error fetching auction', details: error.message }));

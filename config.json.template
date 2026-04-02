@@ -1,5 +1,6 @@
 {
     "web": {
+        "hostname": "",
         "oauth": "",
         "privateKey": "",
         "certificate": ""
@@ -50,7 +51,8 @@
         "secret": "",
         "token": "",
         "server": "",
-        "staffRoles": []
+        "staffRoles": [],
+        "registerBypass": []
     },
     "auction": {
         "DKP": {
