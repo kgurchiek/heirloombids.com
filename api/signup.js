@@ -2,7 +2,7 @@ import { config, supabase, supabaseCache } from '../lib.js';
 
 export default {
     name: 'signup',
-    description: 'Signs up for an event roster',
+    description: 'Signs up for a roster',
     options: [
         {
             name: 'id',

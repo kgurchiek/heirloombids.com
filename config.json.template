@@ -14,35 +14,43 @@
         "url": "",
         "key": "",
         "tables": {
-            "monsters": "",
-            "users": "",
-            "items": "",
-            "auctions": "",
-            "jobs": "",
-            "templates": "",
-            "campRules": "",
-            "pointRules": "",
-            "events": "",
-            "signups": "",
-            "groups": "",
-            "deaths": "",
-            "claims": "",
-            "claimRates": "",
-            "tags": "",
-            "frozenUsers": "",
-            "unfrozenUsers": "",
+            "monsters": "monsters",
+            "users": "users",
+            "items": "items",
+            "auctions": "auctions",
+            "jobs": "jobs",
+            "templates": "monster_slot_templates",
+            "campRules": "camp_point_rules",
+            "pointRules": "bonus_point_rules",
+            "events": "events",
+            "signups": "event_signups",
+            "groups": "competing_groups",
+            "deaths": "monster_deaths",
+            "claims": "claims",
+            "claimRates": "claim_rates",
+            "tags": "tags",
+            "frozenUsers": "frozen_users",
+            "unfrozenUsers": "unfrozen_users",
             "DKP": {
-                "lootHistory": "",
-                "ownedItems": ""
+                "lootHistory": "loot_history_dkp",
+                "ownedItems": "owned_items_dkp"
             },
             "PPP": {
-                "lootHistory": "",
-                "ownedItems": ""
+                "lootHistory": "loot_history_ppp",
+                "ownedItems": "owned_items_ppp"
             },
-            "trackedRates": [],
+            "trackedRates": [
+                "Fafnir",
+                "Nidhogg",
+                "Adamantoise",
+                "Aspidochelone",
+                "Behemoth",
+                "King Behemoth",
+                "Tiamat"
+            ],
             "buckets": {
-                "images": "",
-                "screenshots": ""
+                "images": "images",
+                "screenshots": "screenshots"
             }
         }
     },
@@ -73,10 +81,32 @@
         "parties": 3,
         "slots": 6,
         "team": "",
-        "monsterGroups": [],
-        "placeholderMonsters": [],
+        "monsterGroups": [
+            [
+                "Fafnir",
+                "Nidhogg"
+            ],
+            [
+                "Behemoth",
+                "King Behemoth"
+            ],
+            [
+                "Adamantoise",
+                "Aspidochelone"
+            ]
+        ],
+        "placeholderMonsters": [
+            "Lord of Onzozo"
+        ],
         "postDelay": 3600,
-        "disableEmptyBonus": false
+        "disableEmptyBonus": false,
+        "signupEdits": [
+            "windows",
+            "tagged",
+            "killed",
+            "rage",
+            "slot_template_id"
+        ]
     },
     "graph": {
         "backgroundColor": "white",
