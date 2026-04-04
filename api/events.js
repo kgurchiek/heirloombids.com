@@ -7,7 +7,7 @@ export default {
         {
             name: 'active',
             description: 'whether or not the event is active',
-            accepts: ['true', 'false', null],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         }
     ],

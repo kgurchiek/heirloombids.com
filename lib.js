@@ -1,7 +1,7 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import util from 'node:util';
 import { createClient } from '@supabase/supabase-js';
-import { Client, Partials, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Partials, GatewayIntentBits } from 'discord.js';
 
 const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
 const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
@@ -17,6 +17,33 @@ const handleBidQueue = async () => {
     setTimeout(handleBidQueue);
 }
 handleBidQueue();
+
+let cachedTables = [
+    config.supabase.tables.jobs,
+    config.supabase.tables.templates
+]
+let supabaseCache = {};
+async function updateCache() {
+    let hadError = false;
+    await Promise.all(cachedTables.map(table => (async () => {
+        try {
+            let { data, error } = await supabase.from(table).select('*');
+            if (error == null) {
+                supabaseCache[table] = data;
+                // console.log(`[Supabase Cache]: Fetched ${data.length} rows from ${table}.`);
+            } else {
+                hadError = true;
+                console.log(`[Supabase Cache]: Error fetching ${table}`, error.message == null ? '' : `: ${(error.message.includes('<!DOCTYPE html>') || error.message.includes('<html>')) ? 'Server Error' : error.message}`);
+            }
+        } catch (err) {
+            hadError = true;
+            console.log(`[Supabase Cache]: Error fetching ${table}:`, err);
+        }
+    })()));
+    
+    setTimeout(updateCache, 5000);
+    return hadError;
+}
 
 async function getUser(id) {
     let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
@@ -147,7 +174,6 @@ export {
     // monsterList,
     // userList,
     // jobList,
-    // templateList,
     // campRules,
     // pointRules,
     // groupList,
@@ -171,5 +197,7 @@ export {
     calculateCampPoints,
     calculateBonusPoints,
     openAuction,
-    closeAuction
+    closeAuction,
+    updateCache,
+    supabaseCache
 }

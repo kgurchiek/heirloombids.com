@@ -12,7 +12,7 @@ export default {
         {
             name: 'rage',
             description: 'Whether or not it\'s a rage roster',
-            accept: ['true', 'false', null],
+            accept: ['true', 'false'],
             caseInsensitive: true
         }
     ],

@@ -10,28 +10,28 @@ export default {
             required: true
         },
         {
-            name: 'backgroundcolor',
+            name: 'backgroundColor',
             description: 'the color of the background of the chart'
         },
         {
-            name: 'fontcolor',
+            name: 'fontColor',
             description: 'the color of the text on the chart'
         },
         {
-            name: 'linecolor',
+            name: 'lineColor',
             description: 'the color of the line on the chart'
         },
         {
-            name: 'fillcolor',
+            name: 'fillColor',
             description: 'the color of the area beneath the line'
         }
     ],
     async execute({ res, end, url }) {
         let monsterName = url.searchParams.get('monster');
-        let backgroundColor =  url.searchParams.get('backgroundcolor');
-        let fontColor =  url.searchParams.get('fontcolor');
-        let lineColor =  url.searchParams.get('linecolor');
-        let lineFillColor =  url.searchParams.get('fillcolor');
+        let backgroundColor =  url.searchParams.get('backgroundColor');
+        let fontColor =  url.searchParams.get('fontColor');
+        let lineColor =  url.searchParams.get('lineColor');
+        let lineFillColor =  url.searchParams.get('fillColor');
         
         let { data, error } = await supabase.from(config.supabase.tables.monsters).select('*').eq('monster_name', monsterName).limit(1);
         if (error) return end(500, JSON.stringify({ error: 'Error fetching monster', details: error.message }));

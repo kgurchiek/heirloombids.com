@@ -4,7 +4,7 @@ import http2 from 'node:http2';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
-import { config, client, getUser } from './lib.js';
+import { config, client, getUser, updateCache, supabaseCache } from './lib.js';
 import { Events } from 'discord.js';
 
 let authUrl = new URL(`https://${config.web.hostname}`);
@@ -27,6 +27,9 @@ let promises = ((await fs.promises.readdir('api')).map(a => (async () => {
 })));
 for (let promise of promises) await promise();
 console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`)
+
+if (await updateCache()) process.exit();
+console.log(`[Supabase Cache]: Cached ${Object.keys(supabaseCache).length} tables`);
 
 const staticFiles = {};
 async function readFile(path) {
@@ -105,7 +108,7 @@ server.on('request', async (req, res) => {
 
     function end(code, body) {
         if (code != null) res.statusCode = code;
-        res.end(body);
+        res.end(typeof body == 'object' ? JSON.stringify(body) : body);
     }
 
     function redirect(location) {
