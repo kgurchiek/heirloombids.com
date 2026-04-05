@@ -20,7 +20,9 @@ handleBidQueue();
 
 let cachedTables = [
     config.supabase.tables.jobs,
-    config.supabase.tables.templates
+    config.supabase.tables.templates,
+    config.supabase.tables.campRules,
+    config.supabase.tables.pointRules
 ]
 let supabaseCache = {};
 async function updateCache() {
@@ -50,20 +52,22 @@ async function getUser(id) {
     return error ? { error } : user[0];
 }
 
-function calculateCampPoints(campRules, monster, windows, totalWindows) {
-    let campRule = campRules.find(a => a.monster_name == monster);
+function calculateCampPoints(monster, windows, totalWindows) {
+    let campRule = supabaseCache[config.supabase.tables.campRules].find(a => a.monster_name == monster);
     if (campRule == null) throw Error(`Couldn't find camp point rule for monster "${monster}"`);
+    if (windows == 0) return { type: campRule.type, points: 0 };
+    let points = 0;
+    if (campRule.bonus_windows) points += Math.min(Math.floor(windows / campRule.bonus_windows) * campRule.bonus_points, campRule.max_bonus);
+    if (totalWindows == null) points += campRule.camp_points[Math.min(windows - 1, campRule.camp_points.length)];
     else {
-        let points = 0;
-        if (campRule.bonus_windows) points += Math.min(Math.floor(windows / campRule.bonus_windows) * campRule.bonus_points, campRule.max_bonus);
         let diff = totalWindows - windows;
-        if (windows > 0) points += campRule.camp_points[campRule.camp_points.length - 1 - diff] || 0;
-        return points;
+        points += campRule.camp_points[Math.min(campRule.camp_points.length - 1 - diff, campRule.camp_points.length)];
     }
+    return { type: campRule.type, points };
 }
 
-function calculateBonusPoints(pointRules, signup, type) {
-    let bonusRules = pointRules.filter(a => a.monster_type == type);
+function calculateBonusPoints(signup, type) {
+    let bonusRules = supabaseCache[config.supabase.tables.pointRules].filter(a => a.monster_type == type);
     let dkp = 0;
     let ppp = 0;
     if (signup.tagged) {
@@ -86,7 +90,7 @@ function calculateBonusPoints(pointRules, signup, type) {
         }
     }
     
-    return dkp || ppp;
+    return { type: dkp ? 'DKP' : 'PPP', points: dkp || ppp };
 }
 
 async function openAuction(item, host) {

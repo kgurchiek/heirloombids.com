@@ -25,13 +25,14 @@ export default {
         }
 
         let keys = Object.keys(edit);
-        for (let key of keys) if (!config.roster.signupEdits.includes(key)) return end(403, { error: `Only staff can edit column "${key}"` });
+        if (!user.staff) for (let key of keys) if (!config.roster.signupEdits.includes(key)) return end(403, { error: `Only staff can edit column "${key}"` });
         
         let { data: signup, error } = await supabase.from(config.supabase.tables.signups).select('*').eq('signup_id', id);
         if (error) return end(500, { error: 'Error Fetching Signup', details: error.message });
         signup = signup[0];
         if (signup == null) return end(400, { error: `Couldn't find signup with id "${id}"` });
         if (signup.verified) return end(400, { error: 'Signup has already been verified' });
+        if (!(user.staff || signup.player_id == user.id)) return end(403, { error: 'Only staff can edit other users\' signups' });
 
         if (edit.slot_template_id !== undefined) {
             let template = supabaseCache[config.supabase.tables.templates].find(a => a.slot_template_id == edit.slot_template_id);
