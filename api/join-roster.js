@@ -91,7 +91,8 @@ export default {
             assigned_job_id: job.job_id,
             todgrab: todGrab,
             alt: alt,
-            tag_only: tagOnly
+            tag_only: tagOnly,
+            window: event.windows
         }).select('*'));
         if (error) return end(500, { error: 'Error creating signup', details: error.message });
         res.end(JSON.stringify(signup[0]));
