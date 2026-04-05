@@ -16,9 +16,9 @@ export default {
     ],
     async execute({ res, end, url, user }) {
         let id = url.searchParams.get('id');
-        let userId = url.searchParams.get('user');
+        let userId = url.searchParams.get('user') || user.id;
 
-        if (userId != null && userId != user.id) {
+        if (userId != user.id) {
             if (!user.staff) return end(403, { error: 'Only staff can set another user as todgrab' });
 
             let { data, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', userId);

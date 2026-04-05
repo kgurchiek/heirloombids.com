@@ -103,7 +103,15 @@ let server = http2.createSecureServer({
 });
 server.on('error', (err) => console.error(err));
 
-server.on('request', async (req, res) => {
+let requestQueue = [];
+async function handleRequestQueue() {
+    let queue = requestQueue.splice(0);
+    for (let item of queue) await item();
+    setTimeout(handleRequestQueue);
+}
+handleRequestQueue();
+
+server.on('request', (req, res) => requestQueue.push(async () => {
     let url = new URL(`https://localhost${req.url}`);
     url.hostname = config.web.hostname;
 
@@ -246,6 +254,6 @@ server.on('request', async (req, res) => {
         end(500, errorPages[500]);
         return;
     }
-});
+}));
 
 server.listen(443);

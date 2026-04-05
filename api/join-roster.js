@@ -32,19 +32,19 @@ export default {
         {
             name: 'todGrab',
             description: 'Whether or not it\'s a todgrab signup',
-            accept: ['true', 'false'],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         },
         {
             name: 'alt',
             description: 'Whether or not you\'re signing up with an alt account',
-            accept: ['true', 'false'],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         },
         {
             name: 'tagOnly',
             description: 'Whether or not you\'re signing up to tag',
-            accept: ['true', 'false'],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         }
     ],

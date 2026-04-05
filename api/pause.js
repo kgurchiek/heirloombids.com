@@ -12,7 +12,7 @@ export default {
         {
             name: 'paused',
             description: 'Wether or not the event should be paused (default: true)',
-            accept: ['true', 'false'],
+            accepts: ['true', 'false'],
             caseInsensitive: true
         }
     ],
