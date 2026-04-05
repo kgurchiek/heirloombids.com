@@ -10,7 +10,7 @@ export default {
             required: true
         },
         {
-            name: 'signup',
+            name: 'update',
             description: 'JSON of new data to update',
             required: true
         }
@@ -19,7 +19,7 @@ export default {
         let id = url.searchParams.get('id');
         let edit;
         try {
-            edit = JSON.parse(url.searchParams.get('signup'));
+            edit = JSON.parse(url.searchParams.get('update'));
         } catch (err) {
             return end(400, { error: 'Error parsing arg "signup"', details: err.message });
         }
@@ -51,17 +51,17 @@ export default {
             if (!template.allowed_job_ids.includes(jobId)) return end(400, { error: `Slot doesn't allow job "${job.job_name}"` });
 
             let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', signup.event_id).limit(1);
-            if (error) return end(500, { error: 'Error Fetching Event', details: error.message });
+            if (error) return end(500, { error: 'Error fetching event', details: error.message });
             event = event[0];
 
             let signups;
             ({ data: signups, error } = await supabase.from(config.supabase.tables.signups).select('*').eq('event_id', signup.event_id));
-            if (error) return end(500, { error: 'Error Fetching Signups', details: error.message });
+            if (error) return end(500, { error: 'Error fetching signups', details: error.message });
             if (event.active && signups.find(a => a.slot_template_id == edit.slot_template_id)) return end(400, { error: 'Slot already taken' });
         }
 
         ({ data: signup, error } = await supabase.from(config.supabase.tables.signups).update(edit).eq('signup_id', id).select('*'));
-        if (error) return end(500, { error: 'Error creating signup', details: error.message });
+        if (error) return end(500, { error: 'Error editing signup', details: error.message });
         res.end(JSON.stringify(signup[0]));
     }
 }

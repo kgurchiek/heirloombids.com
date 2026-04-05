@@ -100,12 +100,15 @@
         ],
         "postDelay": 3600,
         "disableEmptyBonus": false,
+        "eventEdits": [
+            "windows"
+        ],
         "signupEdits": [
             "windows",
             "tagged",
             "killed",
             "rage",
-            "slot_template_id"
+            "placeholders"
         ]
     },
     "graph": {
