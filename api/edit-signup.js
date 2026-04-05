@@ -32,7 +32,15 @@ export default {
         signup = signup[0];
         if (signup == null) return end(400, { error: `Couldn't find signup with id "${id}"` });
         if (signup.verified) return end(400, { error: 'Signup has already been verified' });
-        if (!(user.staff || signup.player_id == user.id)) return end(403, { error: 'Only staff can edit other users\' signups' });
+        if (signup.player_id != user.id) {
+            if (!user.staff) return end(403, { error: 'Only staff can edit other users\' signups' });
+
+            if (user.id != signup.player_id) {
+                let { data, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', signup.player_id);
+                if (error) return end(500, { error: 'Error fetching user', details: error.message });
+                if (data.length == 0) return end(400, { error: `Couldn't find user with id "${signup.player_id}"` });
+            }
+        }
 
         if (edit.slot_template_id !== undefined) {
             let template = supabaseCache[config.supabase.tables.templates].find(a => a.slot_template_id == edit.slot_template_id);

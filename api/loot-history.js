@@ -16,7 +16,6 @@ export default {
         if (error) return end(500, JSON.stringify({ error: 'Error fetching item', details: error.message }));
         item = item[0];
         if (item == null) return end(500, JSON.stringify({ error: `Unkown item "${itemName}"` }));
-        console.log(item)
 
         let lootHistory;
         ({ data: lootHistory, error } = await supabase.from(config.supabase.tables[item.type].lootHistory).select('*').eq('item', item.name));
