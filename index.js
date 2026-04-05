@@ -32,7 +32,7 @@ if (await updateCache()) process.exit();
 count = Object.keys(supabaseCache).length;
 console.log(`[Supabase Cache]: Cached ${count} table${count == 1 ? '' : 's'}`);
 
-const staticFiles = {};
+let staticFiles = {};
 async function readFile(path) {
     let stat = await fs.promises.stat(path.join('/'));
     if (stat.isDirectory()) await Promise.all((await fs.promises.readdir(path.join('/'))).map(async a => await readFile(path.concat(a))));
@@ -46,6 +46,7 @@ async function readFile(path) {
     }
 }
 await readFile(['static']);
+staticFiles = staticFiles.static;
 
 let publicKey, privateKey;
 try {
@@ -216,6 +217,7 @@ server.on('request', (req, res) => requestQueue.push(async () => {
         for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
         
         let path = url.pathname.slice(1).split('/');
+        if (path[path.length - 1] == '') path = path.slice(0, -1);
         if (path[0] == 'api') {
             let endpoint = path[1];
             let input = {
@@ -247,6 +249,11 @@ server.on('request', (req, res) => requestQueue.push(async () => {
                 return;
             }
         }
+
+        let page = staticFiles;
+        for (let i = 0; page != null && i < path.length; i++) page = page[path[i]] || page[`${path[i]}.html`];
+        if (!Buffer.isBuffer(page) && typeof page == 'object') page = page['index.html'];
+        if (page != null) return res.end(page);
 
         end(404, errorPages[404])
     } catch (err) {
