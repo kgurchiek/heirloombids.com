@@ -222,7 +222,7 @@ server.on('request', async (req, res) => {
                 let apiModule = api[endpoint];
                 for (let option of apiModule.options || []) {
                     let value = url.searchParams.get(option.name);
-                    if (option.required && value == null) return end(400, JSON.stringify({ error: `Missing required arg "${option.name}"` }));
+                    if (option.required && value == null) return end(400, { error: `Missing required arg "${option.name}"` });
 
                     if (value != null && option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
                         res.statusCode = 400;
@@ -234,7 +234,7 @@ server.on('request', async (req, res) => {
                     await apiModule.execute(input);
                 } catch (err) {
                     console.log(err);
-                    end(500, JSON.stringify({ error: 'Internal Error' }));
+                    end(500, { error: 'Internal Error' });
                 }
                 return;
             }
