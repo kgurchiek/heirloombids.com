@@ -15,7 +15,7 @@ export default {
 
         if (!user.staff) return end(403, { error: 'Only staff can resolve an event' });
 
-        let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id);
+        let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id).limit(1);
         if (error) return end(500, { error: 'Error Fetching Event', details: error.message });
         event = event[0];
         if (event == null) return end(400, { error: `Couldn't find event with id "${id}"` });
@@ -66,7 +66,7 @@ export default {
         
         ({ data: event, error } = await supabase.from(config.supabase.tables.events).update({ verified: true }).eq('event_id', id).select('*'));
         if (error) return end(500, { error: 'Error updating event', details: error.message });
-        
+
         res.end(JSON.stringify(event[0]));
     }
 }

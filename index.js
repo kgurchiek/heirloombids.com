@@ -29,7 +29,8 @@ for (let promise of promises) await promise();
 console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`)
 
 if (await updateCache()) process.exit();
-console.log(`[Supabase Cache]: Cached ${Object.keys(supabaseCache).length} tables`);
+count = Object.keys(supabaseCache).length;
+console.log(`[Supabase Cache]: Cached ${count} table${count == 1 ? '' : 's'}`);
 
 const staticFiles = {};
 async function readFile(path) {
