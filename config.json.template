@@ -1,6 +1,6 @@
 {
     "web": {
-        "https": true, 
+        "https": true,
         "hostname": "",
         "port": 443
         "oauth": "",

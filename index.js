@@ -192,7 +192,7 @@ function handleRequest(req, res) {
                 payload = JSON.parse(token.payload);
                 if (Math.floor(Date.now() / 1000) >= payload.exp) return authRedirect();
             } catch (err) {
-                console.log(err)
+                // console.log(err);
                 return authRedirect();
             }
 
