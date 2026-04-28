@@ -2,7 +2,8 @@
     "web": {
         "https": true,
         "hostname": "",
-        "port": 443
+        "cookieDomain": "",
+        "port": 443,
         "oauth": "",
         "privateKey": "",
         "certificate": ""

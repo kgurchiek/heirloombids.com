@@ -5,7 +5,7 @@ import http2 from 'node:http2';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
-import { config, client, getUser, updateCache, supabaseCache } from './lib.js';
+import { config, publicKey, privateKey, client, getUser, updateCache, supabaseCache } from './lib.js';
 import { Events } from 'discord.js';
 
 const origin = `${config.web.https ? 'https' : 'http'}://${config.web.hostname}`;
@@ -49,12 +49,6 @@ async function readFile(path) {
 }
 await readFile(['static']);
 staticFiles = staticFiles.static;
-
-let publicKey, privateKey;
-try {
-    publicKey = (await fs.promises.readFile(config.jwt.publicKey)).toString();
-    privateKey = (await fs.promises.readFile(config.jwt.privateKey)).toString();
-} catch (err) {}
 
 if (publicKey == null || privateKey == null) {
     let rl = readline.promises.createInterface({ input: process.stdin, output: process.stdout });
@@ -109,9 +103,19 @@ async function handleRequestQueue() {
 handleRequestQueue();
 
 function handleRequest(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || origin);
+	res.setHeader('Access-Control-Allow-Headers', '*');
+	res.setHeader('Access-Control-Request-Method', '*');
+	res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method == 'OPTIONS') {
+        res.statusCode = 204;
+        return res.end();
+    }
+
     requestQueue.push(async () => {
-        let url = new URL(origin);
-        url.pathname = req.url;
+        let url = new URL(`${origin}${req.url}`);
 
         function end(code, body) {
             if (code != null) res.statusCode = code;
@@ -138,14 +142,14 @@ function handleRequest(req, res) {
 
             if (url.pathname == '/auth') {
                 let state = url.searchParams.get('state') || origin;
-                let valid = true;
+                let valid = false;
                 try {
-                    new URL(state)
-                    valid = true;
+                    let u = new URL(state)
+                    if (['http:', 'https:'].includes(u.protocol)) valid = true;
                 } catch (err) {}
-                if (state == null || !valid) return end(400, errorPages[400]);
+                if (state == null || !valid) return end(400, { error: 'Invalid state url' });
                 let code = url.searchParams.get('code');
-                if (code == null) return end(400, errorPages[400]);
+                if (code == null) return authRedirect(state);
                 let response = await fetch('https://discord.com/api/v10/oauth2/token', {
                     method: 'POST',
                     headers: {
@@ -180,7 +184,7 @@ function handleRequest(req, res) {
                 }
                 let user = await response.json();
                 
-                res.appendHeader('set-cookie', `token=${createToken(JSON.stringify({ id: user.id, exp: Math.floor(Date.now() / 1000) + config.jwt.lifetime }))}`);
+                res.appendHeader('set-cookie', `token=${createToken(JSON.stringify({ id: user.id, exp: Math.floor(Date.now() / 1000) + config.jwt.lifetime }))}; domain=${config.web.cookieDomain}`);
                 redirect(state);
                 return;
             }
@@ -219,7 +223,7 @@ function handleRequest(req, res) {
                     url,
                     user
                 }
-                if (api[endpoint]) {
+                if (api[endpoint]) {    
                     res.setHeader('Content-Type', 'application/json');
                     let apiModule = api[endpoint];
                     for (let option of apiModule.options || []) {

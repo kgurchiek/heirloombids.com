@@ -2,8 +2,14 @@ import fs from 'node:fs';
 import util from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import { Client, Partials, GatewayIntentBits } from 'discord.js';
+import config from './config.json' with { type: 'json' };
 
-const config = JSON.parse((await fs.promises.readFile('config.json')).toString());
+let publicKey, privateKey;
+try {
+    publicKey = (await fs.promises.readFile(config.jwt.publicKey)).toString();
+    privateKey = (await fs.promises.readFile(config.jwt.privateKey)).toString();
+} catch (err) {}
+
 const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, Partials.Message], intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages] });
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -165,6 +171,8 @@ async function closeAuction(id) {
 
 export {
     config,
+    publicKey,
+    privateKey,
     client,
     supabase,
     blockBid,
