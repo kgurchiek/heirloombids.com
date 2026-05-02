@@ -204,22 +204,19 @@ function handleRequest(req, res) {
                 return authRedirect();
             }
 
-            let user;
+            let user = await getUser(payload.id);
             if (config.discord.registerBypass.includes(payload.id)) user = payload;
-            else {
-                try {
-                    user = await getUser(payload.id);
-                } catch (err) {
-                    return authRedirect(null, registerUrl.href);
-                }
-            }
             if (user.error) {
                 console.log('Error fetching db user:', user.error)
                 end(500, errorPages[500]);
                 return;
             }
-            let guildMember = await guild.members.fetch(user.id);
-            if (user == null) return end(403, { error: 'Must be a member of the discord server to access api' });
+            let guildMember;
+            try {
+                guildMember = await guild.members.fetch(user.id);
+            } catch (err) {
+                return end(403, { error: 'Must be a member of the discord server to access api' });
+            }
             user.staff = false;
             for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
             
