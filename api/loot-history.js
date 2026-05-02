@@ -33,7 +33,7 @@ export default {
         for (let currency of currencies) {
             let promise = supabase.from(config.supabase.tables[currency].lootHistory).select('*');
             if (item != null) promise = promise.eq('item', item);
-            if (limit != null) promise = promise.limit(limit);
+            if (limit != null) promise = promise.limit(limit).order('acquired_at', { ascending: false });
             let { data: loot, error } = await promise;
             if (error) return end(500, JSON.stringify({ error: 'Error fetching user', details: error.message }));
             loot.map(a => {
