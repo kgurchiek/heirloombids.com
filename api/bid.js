@@ -79,7 +79,7 @@ export default {
 
                 let { min, increment, raise, winRaise } = config.auction[auction.item.type];
                 min = auction.bids[auction.bids.length - 1]?.amount || min - raise;
-                if (Math.round((user[auction.item.type.toLowerCase()] - (auction.item.wipe ? 0 : cost)) / increment) * increment < amount) return end(400, JSON.stringify({ error: 'Insufficient Funds', details: `You only have ${(author[auction.item.type.toLowerCase()] - cost).toFixed(1)} ${auction.item.type} left to bid on ${auction.item.name}${cost == 0 ? '' : ` (You're currently spending ${cost} ${auction.item.type} on ${userBids.length} auction${userBids.length == 1 ? '' : 's'})`}.` }));
+                if (Math.round((user[auction.item.type.toLowerCase()] - (auction.item.wipe ? 0 : cost)) / increment) * increment < amount) return end(400, JSON.stringify({ error: 'Insufficient Funds', details: `You only have ${(user[auction.item.type.toLowerCase()] - cost).toFixed(1)} ${auction.item.type} left to bid on ${auction.item.name}${cost == 0 ? '' : ` (You're currently spending ${cost} ${auction.item.type} on ${userBids.length} auction${userBids.length == 1 ? '' : 's'})`}.` }));
 
                 if (auction.item.wipe) raise = increment;
                 if (Math.abs(Math.round((amount % increment) * 10) - ((amount % increment) * 10)) > 0.00001) return end(400, JSON.stringify({ error: 'Invalid Bid Amount', details: `${auction.item.type} bids must be in increments of ${increment}.` }));
@@ -88,7 +88,7 @@ export default {
 
                 if (auction.bids.length > 0 && amount == min && auction.item.tradeable) return end(400, JSON.stringify({ error: 'Bid Too Low', details: 'You can\'t tie on a tradeable item.' }));
 
-                auction.bids.push({ userId: author.id, user: username, amount, wipe: amount == user[auction.item.type.toLowerCase()] });
+                auction.bids.push({ userId: user.id, user: username, amount, wipe: amount == user[auction.item.type.toLowerCase()] });
                 ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).update({
                     bids: auction.bids,
                     winner: auction.bids.filter(a => a.amount == amount).map(a => a.user).join(', '),
