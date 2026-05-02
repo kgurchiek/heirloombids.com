@@ -215,6 +215,7 @@ function handleRequest(req, res) {
             try {
                 guildMember = await guild.members.fetch(user.id);
             } catch (err) {
+                res.setHeader('Content-Type', 'application/json');
                 return end(403, { error: 'Must be a member of the discord server to access api' });
             }
             user.staff = false;
