@@ -204,7 +204,7 @@ function handleRequest(req, res) {
             }
 
             let user = await getUser(payload.id);
-            if (config.discord.registerBypass.includes(payload.id)) user = payload;
+            if (user == null && config.discord.registerBypass.includes(payload.id)) user = payload;
             if (user.error) {
                 console.log('Error fetching db user:', user.error)
                 end(500, errorPages[500]);

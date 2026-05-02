@@ -14,7 +14,7 @@ const client = new Client({ partials: [Partials.Channel, Partials.GuildMember, P
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
 const bidQueue = [];
-const blockedBids = [];
+let blockedBids = [];
 const blockBid = (id, callback) => blockedBids.push({ id, callback });
 const unblockBid = (id) => blockedBids = blockedBids.filter(a => a.id != id);
 const handleBidQueue = async () => {
@@ -102,7 +102,7 @@ function calculateBonusPoints(signup, type) {
 }
 
 async function openAuction(item, host) {
-    let auction;
+    let auction, error;
     ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('item', item).eq('open', true).limit(1));
     if (error) return { error: 'Error Checking Auctions', details: error.message };
     if (auction.length != 0) return;
