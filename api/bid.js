@@ -13,11 +13,18 @@ export default {
             name: 'amount',
             desciption: 'how much to bid',
             required: true
+        },
+        {
+            name: 'username',
+            description: 'The user to bid for (staff only)'
         }
     ],
     async execute({ res, end, url, user }) {
         let id = url.searchParams.get('id');
         let amount = url.searchParams.get('amount');
+        let username = url.searchParams.get('user');
+        if (user.staff == false && username != null) return end(403, { error: 'Staff Only', details: `Only staff can place bids for other users` });
+        if (username == null) username = user.username;
         
         if (user.frozen) return end(403, JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
         
@@ -36,16 +43,16 @@ export default {
             func: async () => {
                 if (blockedBids.find(a => a.id == id)) await end(400, JSON.stringify({ error: 'Auction Closed' }));
 
-                if (auction.bids.find(a => a.user == user.username && a.amount == amount)) return end(400, JSON.stringify({ error: 'Duplicate Bid', details: `You have already placed a bid of ${amount} ${auction.item.type} on ${auction.item.name}.` }));
+                if (auction.bids.find(a => a.user == username && a.amount == amount)) return end(400, JSON.stringify({ error: 'Duplicate Bid', details: `You have already placed a bid of ${amount} ${auction.item.type} on ${auction.item.name}.` }));
 
-                let { data: userBids, error } = await supabase.from(config.supabase.tables.auctions).select('*, item!inner(name, type, monster, tradeable), winner, price, host, start').eq('open', true).eq('item.type', auction.item.type).neq('item.name', auction.item.name).like('winner', `%${user.username}%`);
+                let { data: userBids, error } = await supabase.from(config.supabase.tables.auctions).select('*, item!inner(name, type, monster, tradeable), winner, price, host, start').eq('open', true).eq('item.type', auction.item.type).neq('item.name', auction.item.name).like('winner', `%${username}%`);
                 if (error) return end(500, JSON.stringify({ error: 'Error Fetching User\'s Bids', details: error.message }));
-                userBids = userBids.filter(a => a.winner.split(', ').includes(user.username));
+                userBids = userBids.filter(a => a.winner.split(', ').includes(username));
                 let cost = userBids.reduce((a, b) => a + b.price, 0);
                 
                 if (auction.item.wipe) {
                     for (let auction of userBids) {
-                        auction.bids = auction.bids.filter(a => a.user != user.username);
+                        auction.bids = auction.bids.filter(a => a.user != username);
                         while (true) {
                             if (auction.bids.length == 0) break;
                             let { data: newWinner, error } = await supabase.from(config.supabase.tables.users).select('id::text, username, dkp, ppp').eq('username', auction.bids[auction.bids.length - 1].user);
@@ -81,7 +88,7 @@ export default {
 
                 if (auction.bids.length > 0 && amount == min && auction.item.tradeable) return end(400, JSON.stringify({ error: 'Bid Too Low', details: 'You can\'t tie on a tradeable item.' }));
 
-                auction.bids.push({ userId: author.id, user: user.username, amount, wipe: amount == user[auction.item.type.toLowerCase()] });
+                auction.bids.push({ userId: author.id, user: username, amount, wipe: amount == user[auction.item.type.toLowerCase()] });
                 ({ data: auction, error } = await supabase.from(config.supabase.tables.auctions).update({
                     bids: auction.bids,
                     winner: auction.bids.filter(a => a.amount == amount).map(a => a.user).join(', '),
