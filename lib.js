@@ -113,7 +113,7 @@ async function openAuction(item, host) {
     return auction[0];
 }
 
-async function closeAuction(id) {
+async function closeAuction(id, closer) {
     let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*, item (name, type, monster)').eq('id', id).limit(1);
     if (error) return { error: 'Error Fetching Auction', details: error.message };
     auction = auction[0];
@@ -143,7 +143,7 @@ async function closeAuction(id) {
         end: 'now()',
         winner: winner?.user,
         price: winner?.amount,
-        closer: user.username
+        closer: closer
     }).eq('id', auction.id).select('*, item (name, type, monster)'));
     if (error) return { error: 'Error Closing Auction', details: error.message };
     auction = auction[0];

@@ -15,7 +15,7 @@ export default {
 
         if (user.frozen) return end(403, JSON.stringify({ error: 'Account Frozen', details: 'Your account is frozen. You cannot manage auctions or place bids on items this time.' }));
 
-        let auction = await closeAuction(id);
+        let auction = await closeAuction(id, user.username);
         if (auction.error) return end(auction.code || 500, JSON.stringify(auction));
         res.end(JSON.stringify(auction));
     }
