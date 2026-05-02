@@ -211,15 +211,18 @@ function handleRequest(req, res) {
                 end(500, errorPages[500]);
                 return;
             }
-            let guildMember;
-            try {
-                guildMember = await guild.members.fetch(user.id);
-            } catch (err) {
-                res.setHeader('Content-Type', 'application/json');
-                return end(403, { error: 'Must be a member of the discord server to access api' });
+            if (config.discord.registerBypass.includes(payload.id)) user.staff = false;
+            else {
+                let guildMember;
+                try {
+                    guildMember = await guild.members.fetch(user.id);
+                } catch (err) {
+                    res.setHeader('Content-Type', 'application/json');
+                    return end(403, { error: 'Must be a member of the Discord server to access api' });
+                }
+                user.staff = false;
+                for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
             }
-            user.staff = false;
-            for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
             
             let path = url.pathname.slice(1).split('/');
             if (path[path.length - 1] == '') path = path.slice(0, -1);
