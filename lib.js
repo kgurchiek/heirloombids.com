@@ -25,6 +25,8 @@ const handleBidQueue = async () => {
 handleBidQueue();
 
 let cachedTables = [
+    config.supabase.tables.users,
+    config.supabase.tables.items,
     config.supabase.tables.jobs,
     config.supabase.tables.templates,
     config.supabase.tables.campRules,

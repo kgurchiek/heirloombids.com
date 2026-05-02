@@ -28,7 +28,7 @@ let promises = ((await fs.promises.readdir('api')).map(a => (async () => {
     count++;
 })));
 for (let promise of promises) await promise();
-console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`)
+console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`);
 
 if (await updateCache()) process.exit();
 count = Object.keys(supabaseCache).length;
@@ -125,6 +125,8 @@ function handleRequest(req, res) {
         function redirect(location) {
             res.setHeader('Location', location);
             end(303);
+            
+            // end(200, JSON.stringify({ redirect: location }));
         }
 
         function authRedirect(state, location) {
@@ -132,7 +134,9 @@ function handleRequest(req, res) {
             location = location || oauthUrl.href;
             let redirectUrl = new URL(location);
             redirectUrl.searchParams.set('state', state);
-            redirect(redirectUrl.href);
+            // redirect(redirectUrl.href);
+
+            end(200, JSON.stringify({ redirect: location }));
         }
 
         try {
@@ -230,7 +234,7 @@ function handleRequest(req, res) {
                         let value = url.searchParams.get(option.name);
                         if (option.required && value == null) return end(400, { error: `Missing required arg "${option.name}"` });
 
-                        if (value != null && option.accepts != null && !option.accepts.includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
+                        if (value != null && option.accepts != null && !option.accepts.map(a => (typeof a == 'string' && option.caseInsensitive) ? a.toLowerCase() : a).includes((typeof value == 'string' && option.caseInsensitive) ? value.toLowerCase() : value)) {
                             res.statusCode = 400;
                             res.end(JSON.stringify({ error: `"${value}" is not an accepted value for arg "${option.name}"` }));
                             return;

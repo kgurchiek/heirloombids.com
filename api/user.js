@@ -1,12 +1,12 @@
-import { config, supabase } from '../lib.js';
+import { config, supabase, supabaseCache } from '../lib.js';
 
 export default {
-    name: 'checkuser',
+    name: 'user',
     description: 'Gets information about a user',
     options: [
         {
             name: 'id',
-            description: 'the id of the user to get information about',
+            description: 'The id of the user to get information about',
             required: true
         }
     ],
