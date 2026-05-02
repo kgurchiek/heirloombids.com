@@ -204,9 +204,15 @@ function handleRequest(req, res) {
                 return authRedirect();
             }
 
-            let user = await getUser(payload.id);
+            let user;
             if (config.discord.registerBypass.includes(payload.id)) user = payload;
-            if (user == null) return authRedirect(null, registerUrl.href);
+            else {
+                try {
+                    user = await getUser(payload.id);
+                } catch (err) {
+                    return authRedirect(null, registerUrl.href);
+                }
+            }
             if (user.error) {
                 console.log('Error fetching db user:', user.error)
                 end(500, errorPages[500]);
