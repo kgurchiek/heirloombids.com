@@ -9,6 +9,10 @@ export default {
             description: 'The name of the item to get loot history of'
         },
         {
+            name: 'username',
+            description: 'The name of the user to get loot history of'
+        },
+        {
             name: 'currency',
             description: 'The currency types of the items',
             accepts: ['dkp', 'ppp', 'all', null],
@@ -21,6 +25,7 @@ export default {
     ],
     async execute({ res, end, url }) {
         let item = url.searchParams.get('item');
+        let username = url.searchParams.get('username');
         let currency = url.searchParams.get('currency') || 'all';
         let limit = url.searchParams.get('limit');
         if (limit != null) {
@@ -33,6 +38,7 @@ export default {
         for (let currency of currencies) {
             let promise = supabase.from(config.supabase.tables[currency].lootHistory).select('*');
             if (item != null) promise = promise.eq('item', item);
+            if (username != null) promise = promise.eq('user', username);
             if (limit != null) promise = promise.limit(limit).order('acquired_at', { ascending: false });
             let { data: loot, error } = await promise;
             if (error) return end(500, JSON.stringify({ error: 'Error fetching user', details: error.message }));
