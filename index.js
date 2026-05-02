@@ -129,14 +129,13 @@ function handleRequest(req, res) {
             // end(200, JSON.stringify({ redirect: location }));
         }
 
-        function authRedirect(state, location) {
+        function authRedirect(state, force) {
             state = state || url.href;
-            location = location || oauthUrl.href;
-            let redirectUrl = new URL(location);
+            let redirectUrl = new URL(oauthUrl.href);
             redirectUrl.searchParams.set('state', state);
-            // redirect(redirectUrl.href);
 
-            end(200, JSON.stringify({ redirect: location }));
+            if (force) return redirect(redirectUrl.href);
+            return end(200, JSON.stringify({ redirect: redirectUrl.href }));
         }
 
         try {
@@ -153,7 +152,7 @@ function handleRequest(req, res) {
                 } catch (err) {}
                 if (state == null || !valid) return end(400, { error: 'Invalid state url' });
                 let code = url.searchParams.get('code');
-                if (code == null) return authRedirect(state);
+                if (code == null) return authRedirect(state, true);
                 let response = await fetch('https://discord.com/api/v10/oauth2/token', {
                     method: 'POST',
                     headers: {
@@ -166,7 +165,7 @@ function handleRequest(req, res) {
                         redirect_uri: authUrl
                     }).toString()
                 });
-                if (response.status == 400) return authRedirect(state);
+                if (response.status == 400) return authRedirect(state, true);
                 else if (response.status != 200) {
                     console.log('Error fetching token:', await response.json());
                     end(500, `Discord API returned code ${response.status}`);
@@ -180,7 +179,7 @@ function handleRequest(req, res) {
                         Authorization: `Bearer ${token}`
                     }
                 });
-                if (response.status == 401) return authRedirect(state);
+                if (response.status == 401) return authRedirect(state, true);
                 else if (response.status != 200) {
                     console.log('Error fetching user data:', await response.json());
                     end(500, `Discord API returned code ${response.status}`);
