@@ -13,7 +13,7 @@ export default {
     async execute({ res, end, url, user }) {
         let id = url.searchParams.get('id');
 
-        if (!user.staff) return end(403, { error: 'Only staff can verify signups' });
+        if (!user.staff) return end(403, { error: 'Staff Only', details: 'Only staff can verify signups' });
 
         let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id).limit(1);
         if (error) return end(500, { error: 'Error fetching event', details: error.message });

@@ -217,7 +217,7 @@ function handleRequest(req, res) {
                     guildMember = await guild.members.fetch(user.id);
                 } catch (err) {
                     res.setHeader('Content-Type', 'application/json');
-                    return end(403, { error: 'Must be a member of the Discord server to access api' });
+                    return end(403, { error: 'Member Only', details: 'Must be a member of the Discord server to access api' });
                 }
                 user.staff = false;
                 for (const role of config.discord.staffRoles) if (guildMember.roles.cache.get(role)) user.staff = true;
@@ -232,7 +232,8 @@ function handleRequest(req, res) {
                     res,
                     end,
                     url,
-                    user
+                    user,
+                    guild
                 }
                 if (api[endpoint]) {    
                     res.setHeader('Content-Type', 'application/json');

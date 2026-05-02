@@ -25,7 +25,7 @@ export default {
         }
 
         let keys = Object.keys(edit);
-        if (!user.staff) for (let key of keys) if (!config.roster.eventEdits.includes(key)) return end(403, { error: `Only staff can edit column "${key}"` });
+        if (!user.staff) for (let key of keys) if (!config.roster.eventEdits.includes(key)) return end(403, { error: 'Staff Only', details: `Only staff can edit column "${key}"` });
         
         let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id).limit(1);
         if (error) return end(500, { error: 'Error fetching event', details: error.message });

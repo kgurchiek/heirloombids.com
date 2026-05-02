@@ -19,7 +19,7 @@ export default {
         let userId = url.searchParams.get('user') || user.id;
 
         if (userId != user.id) {
-            if (!user.staff) return end(403, { error: 'Only staff can set another user as todgrab' });
+            if (!user.staff) return end(403, { error: 'Staff Only', details: 'Only staff can set another user as todgrab' });
 
             let { data, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', userId);
             if (error) return end(500, { error: 'Error fetching user', details: error.message });

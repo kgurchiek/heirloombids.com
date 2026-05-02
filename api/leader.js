@@ -25,7 +25,7 @@ export default {
         let userId = url.searchParams.get('user') || user.id;
         let leader = (url.searchParams.get('leader') || 'true') == 'true';
 
-        if (!(user.staff || userId == user.id)) return end(403, { error: 'Only staff can promote another user to leader' });
+        if (!(user.staff || userId == user.id)) return end(403, { error: 'Staff Only', details: 'Only staff can promote another user to leader' });
 
         let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id);
         if (error) return end(500, { error: 'Error fetching event', details: error.message });

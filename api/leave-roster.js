@@ -25,7 +25,7 @@ export default {
         signup = signup[0];
         if (signup == null) return end(400, { error: `Couldn't find signup with id "${id}"` });
 
-        if (!(user.staff || signup.player_id == user.id)) return end(403, { error: 'Only staff can remove another user\'s signup' });
+        if (!(user.staff || signup.player_id == user.id)) return end(403, { error: 'Staff Only', details: 'Only staff can remove another user\'s signup' });
         
         if (windows == null) {
             ({ data: signup, error } = await supabase.from(config.supabase.tables.signups).delete().eq('signup_id', id).select('*'));
