@@ -1,4 +1,4 @@
-import { config, supabase } from '../lib.js';
+import { config, supabase, supabaseCache } from '../lib.js';
 
 export default {
     name: 'items',
@@ -17,12 +17,9 @@ export default {
         let monster = url.searchParams.get('monster');
         let search = url.searchParams.get('search');
 
-        let promise = supabase.from(config.supabase.tables.items).select('*').eq('available', true);
-        if (monster != null) promise = promise.eq('monster', monster);
-        if (search != null) promise = promise.like('name', `%${search}%`);
-
-        let { data: items, error } = await promise;
-        if (error) return end(500, JSON.stringify({ error: 'Error fetching items', details: error.message }));
+        let items = supabaseCache[config.supabase.tables.items].filter(a => a.available);
+        if (monster != null) items = items.filter(a => a.monster == monster);
+        if (search != null) items = items.filter(a => a.name.toLowerCase().includes(search.toLowerCase()));
 
         res.end(JSON.stringify(items));
     }
