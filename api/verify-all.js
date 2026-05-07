@@ -21,7 +21,7 @@ export default {
         if (event == null) return end(400, { error: `Couldn't find event with id "${id}"` });
 
         let signups;
-        ({ data: signups, error } = await supabase.from(config.supabase.tables.signups).update({ verified: true }).eq('event_id', id).select('*'));
+        ({ data: signups, error } = await supabase.from(config.supabase.tables.signups).update({ verified: true }).eq('event_id', id).eq('verified', null).select('*'));
         if (error) return end(500, { error: 'Error verifying signups', details: error.message });
         res.end(JSON.stringify(signups));
     }
