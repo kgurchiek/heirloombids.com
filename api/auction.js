@@ -12,7 +12,7 @@ export default {
     ],
     async execute({ res, end, url }) {
         let id = url.searchParams.get('id');
-        let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*').eq('id', id).limit(1);
+        let { data: auction, error } = await supabase.from(config.supabase.tables.auctions).select('*, item (*)').eq('id', id).limit(1);
         if (error) return end(500, JSON.stringify({ error: 'Error fetching auction', details: error.message }));
         auction = auction[0];
         if (auction == null) return end(400, JSON.stringify({ error: `No auctions found with id "${id}"` }));

@@ -23,7 +23,7 @@ export default {
             limit = parseInt(limit);
         }
 
-        let promise = supabase.from(config.supabase.tables.auctions).select('*')
+        let promise = supabase.from(config.supabase.tables.auctions).select('*, item (*)')
         if (open != null) promise = promise.eq('open', open);
         if (limit != null) promise = promise.limit(limit).order('start', { ascending: false });
         let { data: auctions, error } = await promise;
