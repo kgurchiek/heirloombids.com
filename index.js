@@ -8,6 +8,29 @@ import cookie from 'cookie';
 import { config, publicKey, privateKey, client, getUser, updateCache, supabaseCache } from './lib.js';
 import { Events } from 'discord.js';
 
+const btoaUrl = (data) => btoa(data).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+const atobUrl = (data) => atob(data.replaceAll('-', '+').replaceAll('_', '/'));
+
+function createToken(payload) {
+    let header = btoaUrl(JSON.stringify({ alg: 'ES256', typ: 'JWT' }));
+    payload = btoaUrl(payload);
+    let key = `${header}.${payload}`;
+    let secret = crypto.sign('sha256', Buffer.from(key), privateKey).toString('base64').replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    key += `.${secret}`;
+    return key;
+}
+if (process.argv[2] == 'token') {
+    console.log(createToken(JSON.stringify({ nonce: Math.round(Math.random() * 10**10), staff: process.argv[3] == 'staff' })));
+    process.exit();
+}
+
+function parseToken(token) {
+    let [header, payload, secret] = token.split('.');
+    secret = crypto.verify('sha256', `${header}.${payload}`, publicKey, Buffer.from(secret, 'base64'));
+    payload = atobUrl(payload);
+    return { payload, secret };
+}
+
 const origin = `${config.web.https ? 'https' : 'http'}://${config.web.hostname}`;
 
 let authUrl = new URL(origin);
@@ -64,25 +87,6 @@ if (publicKey == null || privateKey == null) {
     }));
     await fs.promises.writeFile(config.jwt.publicKey, publicKey);
     await fs.promises.writeFile(config.jwt.privateKey, privateKey);
-}
-
-const btoaUrl = (data) => btoa(data).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-const atobUrl = (data) => atob(data.replaceAll('-', '+').replaceAll('_', '/'));
-
-function createToken(payload) {
-    let header = btoaUrl(JSON.stringify({ alg: 'ES256', typ: 'JWT' }));
-    payload = btoaUrl(payload);
-    let key = `${header}.${payload}`;
-    let secret = crypto.sign('sha256', Buffer.from(key), privateKey).toString('base64').replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-    key += `.${secret}`;
-    return key;
-}
-
-function parseToken(token) {
-    let [header, payload, secret] = token.split('.');
-    secret = crypto.verify('sha256', `${header}.${payload}`, publicKey, Buffer.from(secret, 'base64'));
-    payload = atobUrl(payload);
-    return { payload, secret };
 }
 
 let guild;
