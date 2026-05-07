@@ -21,7 +21,7 @@ export default {
         },
         {
             name: 'time',
-            description: 'When the raid will start'
+            description: 'When the raid will start (unix timestamp)'
         }
     ],
     async execute({ res, end, url }) {
