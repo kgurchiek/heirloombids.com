@@ -192,26 +192,36 @@ function handleRequest(req, res) {
                 return;
             }
             
-            let payload;
+            let token, payload;
             try {
-                let token = parseToken(cookies.token);
+                if (req.headers.authorization) {
+                    let type;
+                    [type, token] = req.headers.authorization.split(' ');
+                    if (type != 'Bearer') return authRedirect();
+                    token = parseToken(token);
+                } else {
+                    token = parseToken(cookies.token);
+                }
                 if (!token.secret) return authRedirect();
                 payload = JSON.parse(token.payload);
-                if (Math.floor(Date.now() / 1000) >= payload.exp) return authRedirect();
+                if (payload.exp != null && Math.floor(Date.now() / 1000) >= payload.exp) return authRedirect();
             } catch (err) {
-                // console.log(err);
+                console.log(err);
                 return authRedirect();
             }
 
-            let user = await getUser(payload.id);
-            if (user == null && config.discord.registerBypass.includes(payload.id)) user = payload;
-            if (user.error) {
-                console.log('Error fetching db user:', user.error)
-                end(500, errorPages[500]);
-                return;
-            }
-            if (config.discord.registerBypass.includes(payload.id)) user.staff = false;
+            let user;
+            if (payload.id == null) user = payload;
             else {
+                user = await getUser(payload.id);
+                if (user == null && config.discord.registerBypass.includes(payload.id)) user = payload;
+                if (user.error) {
+                    console.log('Error fetching db user:', user.error)
+                    end(500, errorPages[500]);
+                    return;
+                }
+            }
+            if (!(payload.id == null || config.discord.registerBypass.includes(payload.id))) {
                 let guildMember;
                 try {
                     guildMember = await guild.members.fetch(user.id);
