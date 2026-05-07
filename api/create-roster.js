@@ -48,7 +48,7 @@ export default {
             }
             ({ data: event, error } = await supabase.from(config.supabase.tables.events).insert({
                 monster_name: monster,
-                start_time: new Date(timestamp * 1000),
+                start_time: new Date(time * 1000),
                 day,
                 rage
             }).select('*'));
