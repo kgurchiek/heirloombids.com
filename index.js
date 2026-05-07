@@ -210,7 +210,7 @@ function handleRequest(req, res) {
                 payload = JSON.parse(token.payload);
                 if (payload.exp != null && Math.floor(Date.now() / 1000) >= payload.exp) return authRedirect();
             } catch (err) {
-                console.log(err);
+                // console.log(err);
                 return authRedirect();
             }
             if (payload.id == null && payload.token_id == null) return authRedirect();
