@@ -20,7 +20,7 @@ function createToken(payload) {
     return key;
 }
 if (process.argv[2] == 'token') {
-    console.log(createToken(JSON.stringify({ nonce: Math.round(Math.random() * 10**10), staff: process.argv[3] == 'staff' })));
+    console.log(createToken(JSON.stringify({ token_id: Math.round(Math.random() * 10**10), staff: process.argv[3] == 'staff' })));
     process.exit();
 }
 
@@ -213,6 +213,7 @@ function handleRequest(req, res) {
                 console.log(err);
                 return authRedirect();
             }
+            if (payload.id == null && payload.token_id == null) return authRedirect();
 
             let user;
             if (payload.id == null) user = payload;
