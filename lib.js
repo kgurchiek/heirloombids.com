@@ -25,35 +25,39 @@ const handleBidQueue = async () => {
 handleBidQueue();
 
 let cachedTables = [
-    config.supabase.tables.users,
-    config.supabase.tables.items,
-    config.supabase.tables.jobs,
-    config.supabase.tables.templates,
-    config.supabase.tables.campRules,
-    config.supabase.tables.pointRules
+    { table: config.supabase.tables.users, delay: 5 },
+    { table: config.supabase.tables.items, delay: 60 },
+    { table: config.supabase.tables.jobs, delay: 60 },
+    { table: config.supabase.tables.templates, delay: 60 },
+    { table: config.supabase.tables.campRules, delay: 60 },
+    { table: config.supabase.tables.pointRules, delay: 60 },
+    { table: config.supabase.tables.tags, delay: 5 }
 ]
 let supabaseCache = {};
-async function updateCache() {
-    let hadError = false;
-    await Promise.all(cachedTables.map(table => (async () => {
+for (let table of cachedTables) {
+    async function updateCache() {
+        let hadError = false;
         try {
-            let { data, error } = await supabase.from(table).select('*');
+            let { data, error } = await supabase.from(table.table).select('*');
             if (error == null) {
-                supabaseCache[table] = data;
-                // console.log(`[Supabase Cache]: Fetched ${data.length} rows from ${table}.`);
+                supabaseCache[table.table] = data;
+                // console.log(`[Supabase Cache]: Fetched ${data.length} row${data.length == 1 ? '' : 's'} from ${table}.`);
             } else {
                 hadError = true;
-                console.log(`[Supabase Cache]: Error fetching ${table}`, error.message == null ? '' : `: ${(error.message.includes('<!DOCTYPE html>') || error.message.includes('<html>')) ? 'Server Error' : error.message}`);
+                console.log(`[Supabase Cache]: Error fetching ${table.table}`, error.message == null ? '' : `: ${(error.message.includes('<!DOCTYPE html>') || error.message.includes('<html>')) ? 'Supabase Server Error' : error.message}`);
             }
         } catch (err) {
             hadError = true;
-            console.log(`[Supabase Cache]: Error fetching ${table}:`, err);
+            console.log(`[Supabase Cache]: Error fetching ${table.table}:`, err);
         }
-    })()));
-    
-    setTimeout(updateCache, 5000);
-    return hadError;
+        
+        return hadError;
+    }
+    if (await updateCache()) process.exit();
+    setInterval(updateCache, table.delay * 1000);
 }
+count = Object.keys(supabaseCache).length;
+console.log(`[Supabase Cache]: Cached ${count} table${count == 1 ? '' : 's'}`);
 
 async function getUser(id) {
     let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
@@ -212,6 +216,5 @@ export {
     calculateBonusPoints,
     openAuction,
     closeAuction,
-    updateCache,
     supabaseCache
 }
