@@ -5,7 +5,7 @@ import http2 from 'node:http2';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
 import cookie from 'cookie';
-import { config, publicKey, privateKey, client, getUser, supabaseCache } from './lib.js';
+import { config, publicKey, privateKey, client, getUser, fetchTables, supabaseCache } from './lib.js';
 import { Events } from 'discord.js';
 
 const btoaUrl = (data) => btoa(data).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
@@ -52,6 +52,8 @@ let promises = ((await fs.promises.readdir('api')).map(a => (async () => {
 })));
 for (let promise of promises) await promise();
 console.log(`[API]: Loaded ${count} endpoint${count == 1 ? '' : 's'}`);
+
+await fetchTables();
 
 let staticFiles = {};
 async function readFile(path) {

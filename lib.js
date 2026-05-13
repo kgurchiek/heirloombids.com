@@ -34,30 +34,32 @@ let cachedTables = [
     { table: config.supabase.tables.tags, delay: 5 }
 ]
 let supabaseCache = {};
-for (let table of cachedTables) {
-    async function updateCache() {
-        let hadError = false;
-        try {
-            let { data, error } = await supabase.from(table.table).select('*');
-            if (error == null) {
-                supabaseCache[table.table] = data;
-                // console.log(`[Supabase Cache]: Fetched ${data.length} row${data.length == 1 ? '' : 's'} from ${table}.`);
-            } else {
+async function fetchTables() {
+    for (let table of cachedTables) {
+        async function updateCache() {
+            let hadError = false;
+            try {
+                let { data, error } = await supabase.from(table.table).select('*');
+                if (error == null) {
+                    supabaseCache[table.table] = data;
+                    // console.log(`[Supabase Cache]: Fetched ${data.length} row${data.length == 1 ? '' : 's'} from ${table}.`);
+                } else {
+                    hadError = true;
+                    console.log(`[Supabase Cache]: Error fetching ${table.table}`, error.message == null ? '' : `: ${(error.message.includes('<!DOCTYPE html>') || error.message.includes('<html>')) ? 'Supabase Server Error' : error.message}`);
+                }
+            } catch (err) {
                 hadError = true;
-                console.log(`[Supabase Cache]: Error fetching ${table.table}`, error.message == null ? '' : `: ${(error.message.includes('<!DOCTYPE html>') || error.message.includes('<html>')) ? 'Supabase Server Error' : error.message}`);
+                console.log(`[Supabase Cache]: Error fetching ${table.table}:`, err);
             }
-        } catch (err) {
-            hadError = true;
-            console.log(`[Supabase Cache]: Error fetching ${table.table}:`, err);
+            
+            return hadError;
         }
-        
-        return hadError;
+        if (await updateCache()) process.exit();
+        setInterval(updateCache, table.delay * 1000);
     }
-    if (await updateCache()) process.exit();
-    setInterval(updateCache, table.delay * 1000);
+    let count = Object.keys(supabaseCache).length;
+    console.log(`[Supabase Cache]: Cached ${count} table${count == 1 ? '' : 's'}`);
 }
-count = Object.keys(supabaseCache).length;
-console.log(`[Supabase Cache]: Cached ${count} table${count == 1 ? '' : 's'}`);
 
 async function getUser(id) {
     let { data: user, error } = await supabase.from(config.supabase.tables.users).select('*').eq('id', id).limit(1);
@@ -216,5 +218,6 @@ export {
     calculateBonusPoints,
     openAuction,
     closeAuction,
+    fetchTables,
     supabaseCache
 }
