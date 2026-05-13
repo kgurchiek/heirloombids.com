@@ -16,7 +16,7 @@ export default {
     ],
     async execute({ res, end, url, user }) {
         let id = url.searchParams.get('id');
-        let windows = url.searchParams.get('id');
+        let windows = url.searchParams.get('windows');
 
         if (windows == null && !(monster == 'Tiamat' || config.roster.placeholderMonsters.includes(monster))) return end(400, { error: 'Missing required arg "windows"' })
         
