@@ -17,6 +17,7 @@ export default {
         account = account[0];
         if (account == null) return end(400, JSON.stringify({ error: `No registered user with id "${id}" could be found` }));
         
+        let guildMember;
         if (config.discord.registerBypass.includes(id)) account.staff = false;
         else {
             try {
