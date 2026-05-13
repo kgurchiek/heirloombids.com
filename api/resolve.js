@@ -15,11 +15,12 @@ export default {
 
         if (!user.staff) return end(403, { error: 'Staff Only', details: 'Only staff can resolve an event' });
 
-        let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*').eq('event_id', id).limit(1);
+        let { data: event, error } = await supabase.from(config.supabase.tables.events).select('*, monster_name (monster_name, monster_type)').eq('event_id', id).limit(1);
         if (error) return end(500, { error: 'Error Fetching Event', details: error.message });
         event = event[0];
         if (event == null) return end(400, { error: `Couldn't find event with id "${id}"` });
         if (event.verified) return end(400, { error: 'Event already verified' });
+        let monster = event.monster_name;
 
         let signups;
         ({ data: signups, error } = await supabase.from(config.supabase.tables.signups).select('*').eq('event_id', id));
