@@ -40,15 +40,6 @@ export default {
                 return end(500, { error: 'Error calculating camp points', details: err.message });
             }
             points[campPoints.type] += campPoints.points;
-            let type = monster.monster_type;
-            if (type == 'NQ' && event.day >= 4) type = 'HQ';
-            let bonusPoints;
-            try {
-                bonusPoints = calculateBonusPoints(signup, type);
-            } catch (err) {
-                return end(500, { error: 'Error calculating bonus points', details: err.message });
-            }
-            points[bonusPoints.type] += bonusPoints.points;
 
             if (points.DKP != 0) {
                 ({ error } = await supabase.rpc('increment_points', { table_name: config.supabase.tables.users, id: signup.player_id.id, type: 'dkp', amount: points.DKP }));
