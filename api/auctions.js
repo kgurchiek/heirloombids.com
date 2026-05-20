@@ -6,7 +6,7 @@ export default {
     options: [
         {
             name: 'open',
-            description: 'whether or not the auction is open',
+            description: 'Whether or not the auction is open',
             accepts: ['true', 'false'],
             caseInsensitive: true
         },
